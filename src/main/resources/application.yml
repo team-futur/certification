@@ -1,6 +1,6 @@
 # Server Info
 server:
-  port: 3030
+  port: 0
 
 # Spring server Info
 spring:
