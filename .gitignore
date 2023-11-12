@@ -35,3 +35,15 @@ out/
 
 ### VS Code ###
 .vscode/
+
+
+### log ###
+logs/*
+
+
+### spring-rest-docs ###
+src/main/resources/static/docs/
+
+### setting file ###
+src/main/resources/application-dev.yml
+src/main/resources/application-prod.yml

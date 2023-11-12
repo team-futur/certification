@@ -2,6 +2,7 @@ plugins {
     id 'java'
     id 'org.springframework.boot' version '2.7.17'
     id 'io.spring.dependency-management' version '1.0.15.RELEASE'
+    id "org.asciidoctor.jvm.convert" version "3.3.2"
 }
 
 group = 'kr.or.futur'
@@ -23,24 +24,48 @@ repositories {
 
 ext {
     set('springCloudVersion', "2021.0.8")
+    snippetsDir = file('build/generated-snippets')
 }
 
+asciidoctor { // add
+    dependsOn test
+    attributes 'snippets': snippetsDir
+    inputs.dir snippetsDir
+}
+
+asciidoctor.doFirst { // add
+    println("---------------- delete present asciidoctor.")
+    delete file('src/main/resources/static/docs')
+}
+
+bootJar { // add
+    dependsOn asciidoctor
+    copy {
+        from "${asciidoctor.outputDir}"
+        into 'src/main/resources/static/docs'
+    }
+}
+
+
 dependencies {
-    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
-    implementation 'org.springframework.boot:spring-boot-starter-security'
-    implementation 'io.jsonwebtoken:jjwt:0.9.1'
-    implementation 'org.springframework.boot:spring-boot-starter-validation'
-    implementation 'org.springframework.boot:spring-boot-starter-web'
-    implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
+    /* spring-data-jpa */ implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    /* spring-security */ implementation 'org.springframework.boot:spring-boot-starter-security'
+    /* jwt */ implementation 'io.jsonwebtoken:jjwt:0.9.1'
+    /* spring-validation */ implementation 'org.springframework.boot:spring-boot-starter-validation'
+    /* spring-web */ implementation 'org.springframework.boot:spring-boot-starter-web'
 
-    compileOnly 'org.projectlombok:lombok'
-    runtimeOnly 'org.mariadb.jdbc:mariadb-java-client'
+    /* eureka-client */ implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
 
-    annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
+    /* mariadb-client */ runtimeOnly 'org.mariadb.jdbc:mariadb-java-client'
+    /* spring-configuration-processor */ annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
+    /* restdocs-mockmvc */ testImplementation 'org.springframework.restdocs:spring-restdocs-mockmvc'
+    /* spring-test */ testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    /* spring-security */ testImplementation 'org.springframework.security:spring-security-test'
+    /* coolsms */ implementation 'net.nurigo:javaSDK:2.2'
+    /* spring-redis */ implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+    /* lombok */
     annotationProcessor 'org.projectlombok:lombok'
-
-    testImplementation 'org.springframework.boot:spring-boot-starter-test'
-    testImplementation 'org.springframework.security:spring-security-test'
+    compileOnly 'org.projectlombok:lombok'
 }
 
 dependencyManagement {
@@ -50,5 +75,6 @@ dependencyManagement {
 }
 
 tasks.named('test') {
+    outputs.dir snippetsDir
     useJUnitPlatform()
 }

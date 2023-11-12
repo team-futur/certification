@@ -4,13 +4,10 @@ server:
 
 # Spring server Info
 spring:
+  # Application Info
   application:
     name: certification-service
-  datasource:
-    driver-class-name: org.mariadb.jdbc.Driver
-    url: jdbc:mariadb://localhost:3306/pesticide
-    username: root
-    password: 
+  # JPA Info
   jpa:
     hibernate:
       ddl-auto: create
@@ -18,7 +15,6 @@ spring:
     properties:
       hibernate:
         format_sql: true
-
 # Eureka Server Info
 eureka:
   client:
@@ -29,7 +25,6 @@ eureka:
   instance:
     instance-id: ${spring.application.name}:${spring.application.instance_id:${random.value}}
 
-springboot:
-  jwt:
-    secret: certification
+
+
 

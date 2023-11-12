@@ -23,14 +23,16 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
     protected void configure(HttpSecurity httpSecurity) throws Exception {
         httpSecurity.httpBasic().disable()
                 .csrf().disable()
+                .cors().disable()
                 .sessionManagement()
                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 .and()
                 .authorizeRequests()
-                .antMatchers("/sign-api/sign-in", "/sign-api/sign-up", "/sign-api/exception").permitAll()
-                .antMatchers(HttpMethod.GET, "/product**").permitAll()
+                .antMatchers("/docs/**").permitAll()
+                .antMatchers("/certification/**").permitAll()
                 .antMatchers("**exception**").permitAll()
-                .anyRequest().hasRole("ADMIN")
+                .antMatchers("/actuator/**").permitAll()
+//                .anyRequest().hasRole("ADMIN")
                 .and()
                 .exceptionHandling().accessDeniedHandler(new CustomAccessDeniedHandler())
                 .and()
@@ -42,6 +44,6 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
     @Override
     public void configure(WebSecurity webSecurity) {
         webSecurity.ignoring().antMatchers("/v2/api-docs", "/swagger-resources/**", "/swagger-ui.html",
-                "/webjars/**", "/swagger/**", "/sign-api/exception");
+                "/webjars/**", "/swagger/**", "/sign-api/exception", "/docs/**");
     }
 }

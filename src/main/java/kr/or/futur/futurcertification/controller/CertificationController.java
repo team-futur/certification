@@ -48,7 +48,7 @@ public class CertificationController {
      */
     @PostMapping("/sign-in")
     public SignInResultDTO signIn(@Valid SignInRequestDTO signInRequestDTO) {
-        return signService.signIn(signInRequestDTO.getId(), signInRequestDTO.getPassword());
+        return signService.signIn(signInRequestDTO.getUserId(), signInRequestDTO.getPassword());
     }
 
     /**
