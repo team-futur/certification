@@ -35,14 +35,14 @@ asciidoctor { // add
 
 asciidoctor.doFirst { // add
     println("---------------- delete present asciidoctor.")
-    delete file('src/main/resources/static/docs')
+    delete file('src/main/resources/static/certification/docs')
 }
 
 bootJar { // add
     dependsOn asciidoctor
     copy {
         from "${asciidoctor.outputDir}"
-        into 'src/main/resources/static/docs'
+        into 'src/main/resources/static/certification/docs'
     }
 }
 
