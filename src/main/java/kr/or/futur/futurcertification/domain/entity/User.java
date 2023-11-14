@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -22,7 +23,8 @@ import java.util.stream.Collectors;
 @Builder
 @Table(name = "user")
 @Entity
-public class User implements UserDetails {
+@EntityListeners(AuditingEntityListener.class)
+public class User extends BaseEntity implements UserDetails{
 
     /**
      * 사용자 IDX
@@ -82,6 +84,13 @@ public class User implements UserDetails {
      */
     @Column(name = "user_birth_day", nullable = false)
     private LocalDate birthDay;
+
+    /**
+     * 삭제 여부
+     */
+    @Column(name = "user_del_yn", nullable = false)
+    private boolean delYn;
+
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {

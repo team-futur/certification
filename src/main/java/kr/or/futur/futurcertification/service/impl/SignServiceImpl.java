@@ -2,12 +2,19 @@ package kr.or.futur.futurcertification.service.impl;
 
 import kr.or.futur.futurcertification.config.provider.JwtTokenProvider;
 import kr.or.futur.futurcertification.domain.common.Status;
+import kr.or.futur.futurcertification.domain.dto.request.ConfirmCertificationRequestDTO;
+import kr.or.futur.futurcertification.domain.dto.request.SendCertificationRequestDTO;
+import kr.or.futur.futurcertification.domain.dto.request.SignUpRequestDTO;
 import kr.or.futur.futurcertification.domain.dto.response.SignInResultDTO;
 import kr.or.futur.futurcertification.domain.dto.response.SignUpResultDTO;
 import kr.or.futur.futurcertification.domain.entity.User;
+import kr.or.futur.futurcertification.exception.CertificationCodeMismatchException;
+import kr.or.futur.futurcertification.exception.CertificationCodeSendingFailedException;
 import kr.or.futur.futurcertification.exception.DuplicateUserIdException;
 import kr.or.futur.futurcertification.exception.LoginFailedException;
 import kr.or.futur.futurcertification.repository.UserRepository;
+import kr.or.futur.futurcertification.service.RedisService;
+import kr.or.futur.futurcertification.service.SMSService;
 import kr.or.futur.futurcertification.service.SignService;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -16,7 +23,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.util.Collections;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -28,39 +37,52 @@ public class SignServiceImpl implements SignService {
 
     private final PasswordEncoder passwordEncoder;
 
+    private final RedisService redisService;
+
+    private final SMSService smsService;
+
     private final Logger log = LoggerFactory.getLogger(SignServiceImpl.class);
 
     @Override
-    public SignUpResultDTO signUp(String id, String password, String name, String role) {
-        log.info("[SignServiceImpl/signUp] 회원 가입 로직 시작");
+    public SignUpResultDTO signUp(SignUpRequestDTO signUpRequestDTO) {
+        String id = signUpRequestDTO.getId();
+        String name = signUpRequestDTO.getName();
+        String password = signUpRequestDTO.getPassword();
+        String role = signUpRequestDTO.getRole();
+
         User user = null;
 
+        /* 0. 이미 존재하는 아이디의 경우 제외 */
         if (userRepository.getByUserId(id) != null) {
             throw new DuplicateUserIdException("동일한 아이디의 사용자가 있습니다.");
         }
 
-        /* Step 1. 권한별 엔티티 객체 생성 */
+        /* 1. 권한별 엔티티 객체 생성 */
+        List<String> roles = null;
+
         if ("admin".equalsIgnoreCase(role)) {
-            user = User.builder()
-                    .userId(id)
-                    .name(name)
-                    .password(passwordEncoder.encode(password))
-                    .roles(Collections.singletonList("ROLE_ADMIN"))
-                    .build();
+            roles = Collections.singletonList("ROLE_ADMIN");
         } else {
-            user = User.builder()
-                    .userId(id)
-                    .name(name)
-                    .password(passwordEncoder.encode(password))
-                    .roles(Collections.singletonList("ROLE_USER"))
-                    .build();
+            roles = Collections.singletonList("ROLE_USER");
         }
 
-        /* Step 2. DB에 저장 */
+        user = User.builder()
+                .userId(id)
+                .name(name)
+                .password(passwordEncoder.encode(password))
+                .roles(roles)
+                .address(signUpRequestDTO.getAddress())
+                .phoneNumber(signUpRequestDTO.getPhoneNumber())
+                .email(signUpRequestDTO.getEmail())
+                .birthDay(LocalDate.parse(signUpRequestDTO.getBirthDay()))
+                .delYn(false)
+                .build();
+
+        /* 2. DB에 저장 */
         User savedUser = userRepository.save(user);
         SignUpResultDTO signUpResultDTO = null;
 
-        /* Step 3. 저장이 맞게 되었는지 검증 */
+        /* 3. 저장이 맞게 되었는지 검증 */
         if (savedUser.getName().isEmpty()) {
             log.error("[SignServiceImpl/signUp] 회원가입 실패");
 
@@ -106,5 +128,55 @@ public class SignServiceImpl implements SignService {
         return SignInResultDTO.builder()
                 .token(token)
                 .build();
+    }
+
+    @Override
+    public void sendCertificationNumber(SendCertificationRequestDTO sendCertificationRequestDTO) {
+        /* 0. redis에 저장할 key 값, 인증번호 생성*/
+        String redisKey = sendCertificationRequestDTO.getType() + "_" + sendCertificationRequestDTO.getPhoneNumber();
+        String redisCntKey = sendCertificationRequestDTO.getType() + "_cnt_" + sendCertificationRequestDTO.getPhoneNumber();
+        String certificationNumber = String.valueOf((Math.random() * 90000) + 10000);
+
+       try {
+           /* 1. 이미 요청한 기록이 있을 경우 해당 데이터를 지움*/
+           if (redisService.existData(redisKey)) {
+               redisService.deleteData(redisKey);
+           }
+
+           int requestCnt = redisService.getData(redisCntKey) == null ? 0 : Integer.parseInt(redisService.getData(redisCntKey));
+
+           if (requestCnt > 4) {
+               throw new CertificationCodeSendingFailedException("일정 시간동안 인증번호를 요청하실 수 없습니다.");
+           }
+
+           /* 2. redis에 저장 및 인증번호 발송 */
+           redisService.setDataExpire(redisKey, certificationNumber, 180);
+           redisService.setDataExpire(redisCntKey, String.valueOf(requestCnt + 1), 600);
+           smsService.sendCertificationSMS(sendCertificationRequestDTO.getPhoneNumber(), certificationNumber);
+       } catch (Exception e) {
+           throw new CertificationCodeSendingFailedException();
+       }
+    }
+
+    @Override
+    public boolean confirmCertificationNumber(ConfirmCertificationRequestDTO certificationRequestDTO) {
+        String redisKey = certificationRequestDTO.getType() + "_" + certificationRequestDTO.getPhoneNumber();
+        String redisCntKey = certificationRequestDTO.getType() + "_cnt_" + certificationRequestDTO.getPhoneNumber();
+        boolean isEqual = false;
+
+        /* 1. 레디스에 저장된 데이터가 있는지 확인 */
+        if(!redisService.existData(redisKey)) {
+            throw new CertificationCodeSendingFailedException();
+        }
+
+        /* 2. 레디스에서 인증번호 추출 */
+        String certificationNumber = redisService.getData(redisKey);
+
+        /* 3. 인증번호 불일치하는 경우 제외 */
+        if(!certificationRequestDTO.getCertificationNumber().equals(certificationNumber)) {
+            throw new CertificationCodeMismatchException();
+        }
+
+        return isEqual;
     }
 }

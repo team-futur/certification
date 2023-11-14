@@ -8,6 +8,11 @@
 :sectlinks:
 :sectanchors:
 
-== My Api Docs
-API 명세서 index.html이다. gradle예제
+== 유레카 연결 여부
 include::src/docs/asciidoc/connected.adoc[]
+
+== 회원가입
+include::src/docs/asciidoc/signUp.adoc[]
+
+== 인증번호 요청
+include::src/docs/asciidoc/requestCertificationNumber.adoc[]

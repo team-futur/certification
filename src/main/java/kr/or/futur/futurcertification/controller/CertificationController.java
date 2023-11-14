@@ -1,7 +1,10 @@
 package kr.or.futur.futurcertification.controller;
 
+import kr.or.futur.futurcertification.domain.dto.request.ConfirmCertificationRequestDTO;
+import kr.or.futur.futurcertification.domain.dto.request.SendCertificationRequestDTO;
 import kr.or.futur.futurcertification.domain.dto.request.SignInRequestDTO;
 import kr.or.futur.futurcertification.domain.dto.request.SignUpRequestDTO;
+import kr.or.futur.futurcertification.domain.dto.response.ConfirmCertificationResponseDTO;
 import kr.or.futur.futurcertification.domain.dto.response.SignInResultDTO;
 import kr.or.futur.futurcertification.domain.dto.response.SignUpResultDTO;
 import kr.or.futur.futurcertification.service.SignService;
@@ -10,10 +13,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
 import java.util.HashMap;
@@ -53,10 +53,37 @@ public class CertificationController {
 
     /**
      * 회원가입
+     * @param signUpRequestDTO {}
      * @return SignUpResultDTO
      */
     @PostMapping("/sign-up")
-    public SignUpResultDTO signUp(@Valid SignUpRequestDTO signUpRequestDTO) {
-        return signService.signUp(signUpRequestDTO.getId(), signUpRequestDTO.getPassword(), signUpRequestDTO.getName(), signUpRequestDTO.getRole());
+    public SignUpResultDTO signUp(@Valid @RequestBody SignUpRequestDTO signUpRequestDTO) {
+        return signService.signUp(signUpRequestDTO);
+    }
+
+    /**
+     * 인증번호 요청
+     * @param sendCertificationRequestDTO {}
+     * @return CertificationResponseDTO
+     */
+    @PostMapping("/request-certification-number")
+    public void requestCertificationNumber(@Valid @RequestBody SendCertificationRequestDTO sendCertificationRequestDTO) {
+        signService.sendCertificationNumber(sendCertificationRequestDTO);
+    }
+
+    /**
+     * 인증번호 확인
+     * @param certificationRequestDTO
+     * @return
+     */
+    @PutMapping("/confirm-certification-number")
+    public ConfirmCertificationResponseDTO confirmCertificationNumber(@Valid @RequestBody ConfirmCertificationRequestDTO certificationRequestDTO) {
+        boolean isEqual = signService.confirmCertificationNumber(certificationRequestDTO);
+
+        return ConfirmCertificationResponseDTO.builder()
+                .code(HttpStatus.OK.value())
+                .msg("인증번호가 일치합니다.")
+                .isEqual(isEqual)
+                .build();
     }
 }
