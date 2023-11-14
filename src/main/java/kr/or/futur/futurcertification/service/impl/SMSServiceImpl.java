@@ -15,8 +15,8 @@ import org.springframework.stereotype.Service;
 import java.util.HashMap;
 import java.util.Map;
 
-@RequiredArgsConstructor
 @Service
+@RequiredArgsConstructor
 public class SMSServiceImpl implements SMSService {
 
     private final CoolSMSConfiguration coolSMSConfiguration;
@@ -30,7 +30,10 @@ public class SMSServiceImpl implements SMSService {
         ObjectMapper objectMapper = new ObjectMapper();
         JSONObject sendJSONResult;
 
-        content = ("[작물 관리 전산 시스템 인증번호] : " + content);
+        if (content.length() > 70) {
+            log.error("SMS는 70자를 초과할 수 없습니다. : {}", content);
+            throw new IllegalArgumentException("SMS은 70자를 초과할 수 없습니다.");
+        }
 
         /* put data */
         param.put("to", coolSMSConfiguration.getCallingNumber());
@@ -51,5 +54,13 @@ public class SMSServiceImpl implements SMSService {
         }
 
         return sendResult;
+    }
+
+    @Override
+    public Map<String, Object> sendCertificationSMS(String phoneNumber, String content) {
+
+        content = ("[작물 관리 전산 시스템 인증번호] : " + content);
+
+        return sendSMS(phoneNumber, content);
     }
 }

@@ -10,4 +10,12 @@ public interface SMSService {
      * @return Map<String, Object> {res: true / false, msg: String}
      */
     Map<String, Object> sendSMS(String phoneNumber, String content);
+
+    /**
+     * 인증번호를 보내는 메서드
+     * @param phoneNumber 휴대폰 번호
+     * @param content 문자 내용
+     * @return Map<String, Object> {res: true / false, msg: String}
+     */
+    Map<String, Object> sendCertificationSMS(String phoneNumber, String content);
 }

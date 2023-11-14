@@ -10,7 +10,7 @@ import org.springframework.test.context.ActiveProfiles;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-@ActiveProfiles("dev")
+@ActiveProfiles("prod")
 @SpringBootTest
 class CoolSMSConfigurationTest {
 
@@ -20,10 +20,11 @@ class CoolSMSConfigurationTest {
     private CoolSMSConfiguration coolSMSConfiguration;
 
     @Test
-    @DisplayName("CoolSMS 라이브러리 연동 확인")
-    void isConnected() {
-        log.info("=========================");
-        log.info(coolSMSConfiguration.toString());
-        log.info("=========================");
+    @DisplayName("CoolSMS 라이브러리 세팅 값 확인")
+    void isSetCoolSMSConfiguration() {
+        assertNotNull(coolSMSConfiguration, "CoolSMS 라이브러리가 세팅되지 않았습니다.");
+        assertNotNull(coolSMSConfiguration.getApiKey(), "CoolSMS API Key가 세팅되지 않았습니다.");
+        assertNotNull(coolSMSConfiguration.getCallingNumber(), "CoolSMS Calling Number가 세팅되지 않았습니다.");
+        assertNotNull(coolSMSConfiguration.getSecretKey(), "CoolSMS Secret Key가 세팅되지 않았습니다.");
     }
 }
