@@ -1,10 +1,8 @@
 package kr.or.futur.futurcertification.domain.entity;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import kr.or.futur.futurcertification.domain.dto.UserDTO;
+import lombok.*;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -88,6 +86,7 @@ public class User extends BaseEntity implements UserDetails{
     /**
      * 삭제 여부
      */
+    @Setter
     @Column(name = "user_del_yn", nullable = false)
     private boolean delYn;
 
@@ -129,5 +128,17 @@ public class User extends BaseEntity implements UserDetails{
     @Override
     public boolean isEnabled() {
         return true;
+    }
+
+    public UserDTO toDTO() {
+        return UserDTO.builder()
+                .idx(this.idx)
+                .userId(this.userId)
+                .name(this.name)
+                .email(this.email)
+                .phoneNumber(this.phoneNumber)
+                .address(this.address)
+                .roles(this.roles)
+                .build();
     }
 }

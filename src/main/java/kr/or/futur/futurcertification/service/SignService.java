@@ -1,5 +1,6 @@
 package kr.or.futur.futurcertification.service;
 
+import kr.or.futur.futurcertification.domain.dto.UserDTO;
 import kr.or.futur.futurcertification.domain.dto.request.ConfirmCertificationRequestDTO;
 import kr.or.futur.futurcertification.domain.dto.request.SendCertificationRequestDTO;
 import kr.or.futur.futurcertification.domain.dto.request.SignUpRequestDTO;
@@ -37,4 +38,17 @@ public interface SignService {
      * @return
      */
     boolean confirmCertificationNumber(ConfirmCertificationRequestDTO certificationRequestDTO);
+
+    /**
+     * 사용자 삭제
+     * @param userId
+     */
+    void deleteUser(String userId);
+
+    /**
+     * 아이디 찾기
+     * @param phoneNumber
+     * @return
+     */
+    UserDTO findUserId(String phoneNumber);
 }

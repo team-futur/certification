@@ -2,16 +2,14 @@ package kr.or.futur.futurcertification.service.impl;
 
 import kr.or.futur.futurcertification.config.provider.JwtTokenProvider;
 import kr.or.futur.futurcertification.domain.common.Status;
+import kr.or.futur.futurcertification.domain.dto.UserDTO;
 import kr.or.futur.futurcertification.domain.dto.request.ConfirmCertificationRequestDTO;
 import kr.or.futur.futurcertification.domain.dto.request.SendCertificationRequestDTO;
 import kr.or.futur.futurcertification.domain.dto.request.SignUpRequestDTO;
 import kr.or.futur.futurcertification.domain.dto.response.SignInResultDTO;
 import kr.or.futur.futurcertification.domain.dto.response.SignUpResultDTO;
 import kr.or.futur.futurcertification.domain.entity.User;
-import kr.or.futur.futurcertification.exception.CertificationCodeMismatchException;
-import kr.or.futur.futurcertification.exception.CertificationCodeSendingFailedException;
-import kr.or.futur.futurcertification.exception.DuplicateUserIdException;
-import kr.or.futur.futurcertification.exception.LoginFailedException;
+import kr.or.futur.futurcertification.exception.*;
 import kr.or.futur.futurcertification.repository.UserRepository;
 import kr.or.futur.futurcertification.service.RedisService;
 import kr.or.futur.futurcertification.service.SMSService;
@@ -57,7 +55,17 @@ public class SignServiceImpl implements SignService {
             throw new DuplicateUserIdException("동일한 아이디의 사용자가 있습니다.");
         }
 
-        /* 1. 권한별 엔티티 객체 생성 */
+        /* 1. 이미 존재하는 휴대폰 번호 제외 */
+        if(userRepository.findByPhoneNumber(signUpRequestDTO.getPhoneNumber()).isPresent()) {
+            throw new DuplicatePhoneNumberException("동일한 휴대폰 번호가 있습니다.");
+        }
+
+        /* 2. 레디스에 인증 번호 확인 됐는지 확인 */
+        if (!redisService.existData("REGISTER_result_" + signUpRequestDTO.getPhoneNumber())) {
+            throw new CertificationCodeExpiredException();
+        }
+
+        /* 3. 권한별 엔티티 객체 생성 */
         List<String> roles = null;
 
         if ("admin".equalsIgnoreCase(role)) {
@@ -78,11 +86,12 @@ public class SignServiceImpl implements SignService {
                 .delYn(false)
                 .build();
 
-        /* 2. DB에 저장 */
+        log.info("3");
+        /* 4. DB에 저장 */
         User savedUser = userRepository.save(user);
         SignUpResultDTO signUpResultDTO = null;
 
-        /* 3. 저장이 맞게 되었는지 검증 */
+        /* 5. 저장이 맞게 되었는지 검증 */
         if (savedUser.getName().isEmpty()) {
             log.error("[SignServiceImpl/signUp] 회원가입 실패");
 
@@ -135,7 +144,7 @@ public class SignServiceImpl implements SignService {
         /* 0. redis에 저장할 key 값, 인증번호 생성*/
         String redisKey = sendCertificationRequestDTO.getType() + "_" + sendCertificationRequestDTO.getPhoneNumber();
         String redisCntKey = sendCertificationRequestDTO.getType() + "_cnt_" + sendCertificationRequestDTO.getPhoneNumber();
-        String certificationNumber = String.valueOf((Math.random() * 90000) + 10000);
+        String certificationNumber = String.valueOf((int) (Math.random() * 90000) + 10000);
 
        try {
            /* 1. 이미 요청한 기록이 있을 경우 해당 데이터를 지움*/
@@ -162,7 +171,6 @@ public class SignServiceImpl implements SignService {
     public boolean confirmCertificationNumber(ConfirmCertificationRequestDTO certificationRequestDTO) {
         String redisKey = certificationRequestDTO.getType() + "_" + certificationRequestDTO.getPhoneNumber();
         String redisCntKey = certificationRequestDTO.getType() + "_cnt_" + certificationRequestDTO.getPhoneNumber();
-        boolean isEqual = false;
 
         /* 1. 레디스에 저장된 데이터가 있는지 확인 */
         if(!redisService.existData(redisKey)) {
@@ -177,6 +185,34 @@ public class SignServiceImpl implements SignService {
             throw new CertificationCodeMismatchException();
         }
 
-        return isEqual;
+        /* 4. 성공 시 인증번호 시도 횟수 초기화 */
+        redisService.setDataExpire(redisCntKey, "0", 600);
+
+        /* 5. 성공 시 결과 redis에 저장 */
+        redisService.setDataExpire(certificationRequestDTO.getType() + "_result_" + certificationRequestDTO.getPhoneNumber(), "true", 600);
+        return true;
+    }
+
+    @Override
+    public void deleteUser(String userId) {
+        User byUserId = userRepository.getByUserId(userId);
+
+        /* 0. 사용자 조회 못할 경우 */
+        if (byUserId == null) {
+            throw new UserNotFoundException();
+        }
+
+        /* TODO Redis로 검증 */
+        /* 1. 사용자 삭제 */
+        byUserId.setDelYn(true);
+        userRepository.save(byUserId);
+    }
+
+    @Override
+    public UserDTO findUserId(String phoneNumber) {
+        User user = userRepository.findByPhoneNumber(phoneNumber)
+                .orElseThrow(UserNotFoundException::new);
+
+        return user.toDTO();
     }
 }

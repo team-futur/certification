@@ -29,6 +29,7 @@ public class CertificationController {
 
     /**
      * 연결됐는지 여부 판별하는 Handler
+     *
      * @return {isConnected: true}
      */
     @GetMapping("/connected")
@@ -44,6 +45,7 @@ public class CertificationController {
 
     /**
      * 로그인
+     *
      * @return SignInResultDTO
      */
     @PostMapping("/sign-in")
@@ -53,6 +55,7 @@ public class CertificationController {
 
     /**
      * 회원가입
+     *
      * @param signUpRequestDTO {}
      * @return SignUpResultDTO
      */
@@ -63,6 +66,7 @@ public class CertificationController {
 
     /**
      * 인증번호 요청
+     *
      * @param sendCertificationRequestDTO {}
      * @return CertificationResponseDTO
      */
@@ -73,6 +77,7 @@ public class CertificationController {
 
     /**
      * 인증번호 확인
+     *
      * @param certificationRequestDTO
      * @return
      */
@@ -82,8 +87,24 @@ public class CertificationController {
 
         return ConfirmCertificationResponseDTO.builder()
                 .code(HttpStatus.OK.value())
-                .msg("인증번호가 일치합니다.")
                 .isEqual(isEqual)
                 .build();
+    }
+
+    /**
+     * 로그아웃
+     */
+    @PutMapping("/logout")
+    public void logout() {
+        /* TODO 로그아웃 구현 */
+    }
+
+    /**
+     * 사용자 삭제
+     * @param userId
+     */
+    @DeleteMapping("/{userId}")
+    public void delete(@PathVariable String userId) {
+        /* TODO 삭제 */
     }
 }

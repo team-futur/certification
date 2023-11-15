@@ -1,8 +1,10 @@
 package kr.or.futur.futurcertification.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
+import kr.or.futur.futurcertification.domain.dto.UserDTO;
+import kr.or.futur.futurcertification.service.RedisService;
+import kr.or.futur.futurcertification.service.SignService;
+import org.junit.jupiter.api.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,19 +27,29 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
-@ActiveProfiles("local")
+@ActiveProfiles("prod")
 @AutoConfigureMockMvc
 @AutoConfigureRestDocs
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class CertificationControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
+
     @Autowired
     private ObjectMapper objectMapper;
+
+    @Autowired
+    private RedisService redisService;
+
+    @Autowired
+    private SignService signService;
+
     private final static Logger log = LoggerFactory.getLogger(CertificationControllerTest.class);
 
 
     @Test
+    @Order(4)
     @DisplayName("유레카 서버 연결 확인")
     void connected() throws Exception {
         Map<String, String> input = new HashMap<>();
@@ -55,9 +67,15 @@ class CertificationControllerTest {
     }
 
     @Test
+    @Order(3)
     @DisplayName("회원가입")
 //    @Transactional
     void signUp() throws Exception {
+        /* 데이터 정리 */
+        UserDTO userDTO = signService.findUserId("010-6526-3863");
+
+        signService.deleteUser(userDTO.getUserId());
+
         Map<String, Object> inputs = new HashMap<>();
 
         inputs.put("id", "test" + Math.round(Math.random() * 10000));
@@ -65,7 +83,7 @@ class CertificationControllerTest {
         inputs.put("name", "test");
         inputs.put("role", "ROLE_USER");
         inputs.put("email", "test@test.com");
-        inputs.put("phoneNumber", "010-1234-5678");
+        inputs.put("phoneNumber", "010-6526-3863");
         inputs.put("address", "test");
         inputs.put("birthDay", "2022-01-01");
 
@@ -97,11 +115,13 @@ class CertificationControllerTest {
     }
 
     @Test
+    @Order(5)
     @DisplayName("로그인")
     void signIn() {
     }
 
     @Test
+    @Order(1)
     @DisplayName("인증번호 요청")
     void requestCertificationNumber() throws Exception {
         Map<String, Object> inputs = new HashMap<>();
@@ -118,13 +138,40 @@ class CertificationControllerTest {
                                 requestFields(
                                         fieldWithPath("phoneNumber").description("휴대전화 번호"),
                                         fieldWithPath("type").description("인증번호 타입(REGISTER/FIND_ID/FIND_PW)")
-                                        )
+                                )
                         )
                 );
     }
 
     @Test
+    @Order(2)
     @DisplayName("인증번호 확인")
-    void confirmCertificationNumber() {
+    void confirmCertificationNumber() throws Exception {
+        Map<String, Object> inputs = new HashMap<>();
+        String certificationNumber = redisService.getData("REGISTER_010-6526-3863");
+
+        inputs.put("phoneNumber", "010-6526-3863");
+        inputs.put("type", "REGISTER");
+        inputs.put("certificationNumber", certificationNumber);
+
+        mockMvc.perform(RestDocumentationRequestBuilders.put("/certification/confirm-certification-number")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(inputs)))
+                .andExpect(status().isOk())
+                .andDo(print())
+                .andDo(document("confirm-certification-number-test",
+                        requestFields(
+                                fieldWithPath("certificationNumber").description("인증번호"),
+                                fieldWithPath("type").description("인증번호 타입(REGISTER/FIND_ID/FIND_PW)"),
+                                fieldWithPath("phoneNumber").description("휴대전화 번호")
+                        ),
+                        responseFields(
+                                fieldWithPath("code").description("응답 코드"),
+                                fieldWithPath("msg").description("응답 메세지"),
+                                fieldWithPath("equal").description("인증번호 확인 여부")
+                        )
+                ))
+                .andExpect(jsonPath("$.equal").value(is(true)))
+                .andExpect(jsonPath("$.code").value(is(200)));
     }
 }

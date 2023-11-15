@@ -1,10 +1,7 @@
 package kr.or.futur.futurcertification.config.handler;
 
 import kr.or.futur.futurcertification.domain.dto.response.ErrorResponseDTO;
-import kr.or.futur.futurcertification.exception.CertificationCodeExpiredException;
-import kr.or.futur.futurcertification.exception.CertificationCodeSendingFailedException;
-import kr.or.futur.futurcertification.exception.DuplicateUserIdException;
-import kr.or.futur.futurcertification.exception.LoginFailedException;
+import kr.or.futur.futurcertification.exception.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -32,7 +29,8 @@ public class CustomExceptionHandler {
     @ExceptionHandler({
             DuplicateUserIdException.class,
             LoginFailedException.class,
-            CertificationCodeExpiredException.class
+            CertificationCodeExpiredException.class,
+            DuplicatePhoneNumberException.class
     })
     public ResponseEntity<ErrorResponseDTO> handleClientException(RuntimeException e) {
         return ResponseEntity
@@ -42,7 +40,10 @@ public class CustomExceptionHandler {
                         .build());
     }
 
-    @ExceptionHandler({CertificationCodeSendingFailedException.class})
+    @ExceptionHandler({
+            CertificationCodeSendingFailedException.class,
+            SMSSendingFailedException.class
+    })
     public ResponseEntity<ErrorResponseDTO> handleServerException(RuntimeException e) {
         return ResponseEntity
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)

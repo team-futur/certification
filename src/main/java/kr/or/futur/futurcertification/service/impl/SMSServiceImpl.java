@@ -3,6 +3,7 @@ package kr.or.futur.futurcertification.service.impl;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import kr.or.futur.futurcertification.config.CoolSMSConfiguration;
+import kr.or.futur.futurcertification.exception.SMSSendingFailedException;
 import kr.or.futur.futurcertification.service.SMSService;
 import lombok.RequiredArgsConstructor;
 import net.nurigo.java_sdk.api.Message;
@@ -49,8 +50,10 @@ public class SMSServiceImpl implements SMSService {
             sendResult = objectMapper.readValue(sendJSONResult.toJSONString(), Map.class);
         } catch (CoolsmsException e) {
             log.error("SMS를 발송하지 못했습니다. : {}", e.getMessage());
+            throw new SMSSendingFailedException();
         } catch (JsonProcessingException e) {
             log.error("SMS 결과를 Map으로 파싱하지 못했습니다. : {}", e.getMessage());
+            throw new SMSSendingFailedException();
         }
 
         return sendResult;
