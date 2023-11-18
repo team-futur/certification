@@ -30,7 +30,10 @@ public class CustomExceptionHandler {
             DuplicateUserIdException.class,
             LoginFailedException.class,
             CertificationCodeExpiredException.class,
-            DuplicatePhoneNumberException.class
+            DuplicatePhoneNumberException.class,
+            CertificationCodeNotRequestedException.class,
+            CertificationCodeMismatchException.class,
+            UserNotFoundException.class
     })
     public ResponseEntity<ErrorResponseDTO> handleClientException(RuntimeException e) {
         return ResponseEntity
