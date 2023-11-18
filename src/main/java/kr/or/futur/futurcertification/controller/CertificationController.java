@@ -107,4 +107,9 @@ public class CertificationController {
     public void delete(@PathVariable String userId) {
         signService.deleteUser(userId);
     }
+
+    @PutMapping("/restore/{userId}")
+    public void restoreUser(@PathVariable String userId) {
+        signService.restoreDeletedUser(userId);
+    }
 }

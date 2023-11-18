@@ -140,6 +140,7 @@ public class User extends BaseEntity implements UserDetails{
                 .phoneNumber(this.phoneNumber)
                 .address(this.address)
                 .roles(this.roles)
+                .delYn(this.delYn)
                 .build();
     }
 }

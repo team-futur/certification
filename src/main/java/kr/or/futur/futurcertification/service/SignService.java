@@ -4,10 +4,8 @@ import kr.or.futur.futurcertification.domain.dto.UserDTO;
 import kr.or.futur.futurcertification.domain.dto.request.ConfirmCertificationRequestDTO;
 import kr.or.futur.futurcertification.domain.dto.request.SendCertificationRequestDTO;
 import kr.or.futur.futurcertification.domain.dto.request.SignUpRequestDTO;
-import kr.or.futur.futurcertification.domain.dto.response.ConfirmCertificationResponseDTO;
 import kr.or.futur.futurcertification.domain.dto.response.SignInResultDTO;
 import kr.or.futur.futurcertification.domain.dto.response.SignUpResultDTO;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 import java.util.List;
@@ -49,12 +47,26 @@ public interface SignService {
      */
     void deleteUser(String userId);
 
+
+    /**
+     * 삭제된 유저를 복구
+     * @param userId
+     */
+    void restoreDeletedUser(String userId);
+
     /**
      * 아이디 찾기
+     * @param userId
+     * @return
+     */
+    UserDTO findUserId(String userId);
+
+    /**
+     * 전화번호로 사용자 찾기
      * @param phoneNumber
      * @return
      */
-    UserDTO findUserId(String phoneNumber);
+    UserDTO findPhoneNumber(String phoneNumber);
 
     /**
      * 사용자 데이터 가져오기

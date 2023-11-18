@@ -59,13 +59,15 @@ public class SignServiceImpl implements SignService {
             throw new DuplicateUserIdException("동일한 아이디의 사용자가 있습니다.");
         }
 
+        log.info("@@ : {}", userRepository.findByPhoneNumber(signUpRequestDTO.getPhoneNumber()).isPresent());
+
         /* 1. 이미 존재하는 휴대폰 번호 제외 */
         if(userRepository.findByPhoneNumber(signUpRequestDTO.getPhoneNumber()).isPresent()) {
             throw new DuplicatePhoneNumberException("동일한 휴대폰 번호가 있습니다.");
         }
 
         /* 2. 레디스에 인증 번호 확인 됐는지 확인 */
-        if (!redisService.existData("REGISTER_result_" + signUpRequestDTO.getPhoneNumber())) {
+        if (!redisService.getData("REGISTER_result_" + signUpRequestDTO.getPhoneNumber()).equals("true")) {
             throw new CertificationCodeExpiredException();
         }
 
@@ -212,7 +214,7 @@ public class SignServiceImpl implements SignService {
         }
 
         /* 3. 인증번호가 일치하지 않은 경우 */
-        if(!redisService.existData(CertificationCodeType.DELETE.name() + "_result_" + byUserId.getPhoneNumber())) {
+        if(!redisService.getData(CertificationCodeType.DELETE.name() + "_result_" + byUserId.getPhoneNumber()).equals("true")) {
             throw new CertificationCodeMismatchException();
         }
 
@@ -222,11 +224,40 @@ public class SignServiceImpl implements SignService {
     }
 
     @Override
-    public UserDTO findUserId(String phoneNumber) {
-        User user = userRepository.findByPhoneNumber(phoneNumber)
+    public void restoreDeletedUser(String userId) {
+        /* 사용자 조회 */
+        User user = userRepository.findByUserId(userId)
                 .orElseThrow(UserNotFoundException::new);
 
-        return user.toDTO();
+        /* 인증 번호 요청 확인 */
+        if (!redisService.existData(CertificationCodeType.RESTORE.name() + "_" + user.getPhoneNumber())) {
+            throw new CertificationCodeNotRequestedException();
+        }
+
+        /* 인증번호가 일치하지 않은 경우 */
+        if(!redisService.getData(CertificationCodeType.RESTORE.name() + "_result_" + user.getPhoneNumber()).equals("true")) {
+            throw new CertificationCodeMismatchException();
+        }
+
+        /* 사용자 복구 */
+        user.setDelYn(false);
+
+        /* DB에 저장 */
+        userRepository.save(user);
+    }
+
+    @Override
+    public UserDTO findPhoneNumber(String phoneNumber) {
+        return userRepository.findByPhoneNumber(phoneNumber)
+                .orElseThrow(UserNotFoundException::new)
+                .toDTO();
+    }
+
+    @Override
+    public UserDTO findUserId(String userId) {
+        return userRepository.findByUserId(userId)
+                .orElseThrow(UserNotFoundException::new)
+                .toDTO();
     }
 
     @Override

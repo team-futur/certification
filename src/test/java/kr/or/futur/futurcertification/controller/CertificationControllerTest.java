@@ -1,6 +1,7 @@
 package kr.or.futur.futurcertification.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import kr.or.futur.futurcertification.domain.common.CertificationCodeType;
 import kr.or.futur.futurcertification.domain.dto.UserDTO;
 import kr.or.futur.futurcertification.exception.UserNotFoundException;
 import kr.or.futur.futurcertification.service.RedisService;
@@ -13,23 +14,22 @@ import org.springframework.boot.test.autoconfigure.restdocs.AutoConfigureRestDoc
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders;
-import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestBuilders;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.Random;
 
-import static org.hamcrest.Matchers.in;
 import static org.hamcrest.Matchers.is;
 import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.document;
 import static org.springframework.restdocs.payload.PayloadDocumentation.*;
-import static org.springframework.restdocs.request.RequestDocumentation.*;
+import static org.springframework.restdocs.request.RequestDocumentation.parameterWithName;
+import static org.springframework.restdocs.request.RequestDocumentation.pathParameters;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -40,6 +40,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureRestDocs
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class CertificationControllerTest {
+
+    /* TODO @Order 어노테이션이 정상적으로 동작하는지 확인 필요 */
 
     @Autowired
     private MockMvc mockMvc;
@@ -54,7 +56,6 @@ class CertificationControllerTest {
     private SignService signService;
 
     private final static Logger log = LoggerFactory.getLogger(CertificationControllerTest.class);
-
 
     @Test
     @Order(4)
@@ -76,11 +77,11 @@ class CertificationControllerTest {
 
     @Test
     @Order(3)
+    @Transactional
     @DisplayName("회원가입")
-//    @Transactional
     void signUp() throws Exception {
         /* 데이터 정리 */
-        UserDTO userDTO = signService.findUserId("010-6526-3863");
+        UserDTO userDTO = signService.findPhoneNumber("010-6526-3863");
 
         signService.deleteUser(userDTO.getUserId());
 
@@ -185,6 +186,7 @@ class CertificationControllerTest {
 
     @Test
     @Order(6)
+    @Transactional
     @DisplayName("사용자 삭제")
     void deleteUser() throws Exception {
         Map<String, Object> inputs = new HashMap<>();
@@ -221,5 +223,33 @@ class CertificationControllerTest {
                                 parameterWithName("userId").description("사용자 ID")
                         )
                 ));
+    }
+
+    @Test
+    @Transactional
+    @DisplayName("삭제된 회원 복구")
+    void restoreUser() throws Exception {
+        /* 삭제된 사용자 찾기 */
+        List<UserDTO> userDTOs = signService.findAllByDelYn(PageRequest.of(0, 100), true);
+
+        /* 조회된 여부 없을 경우 에러 발생 */
+        if(userDTOs.isEmpty()) {
+            throw new UserNotFoundException("조회된 삭제 사용자가 없습니다.");
+        }
+
+        String userId = userDTOs.get(0).getUserId();
+
+        /* 특정 사용자 찾기 */
+        UserDTO userDTO = signService.findUserId(userId);
+
+        /* 임의의 인증번호 생성, 저장 및 확인 */
+        String certificationCode = String.valueOf((int) (Math.random() * 90000) + 10000);
+        redisService.setDataExpire(CertificationCodeType.RESTORE.name() + "_" + userDTO.getPhoneNumber(), certificationCode, 60);
+        redisService.setDataExpire(CertificationCodeType.RESTORE.name() + "_result_" + userDTO.getPhoneNumber(), String.valueOf(true),60);
+
+        /* 사용자 복구 */
+        signService.restoreDeletedUser(userDTO.getUserId());
+
+        /* TODO Spring Rest Docs 문서화 필요 */
     }
 }

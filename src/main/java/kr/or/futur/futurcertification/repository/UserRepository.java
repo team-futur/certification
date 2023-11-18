@@ -35,6 +35,13 @@ public interface UserRepository extends JpaRepository<User, Long> {
     Optional<User> findByPhoneNumber(String phoneNumber);
 
     /**
+     * 특정한 사용자 아이디로 조회
+     * @param userId
+     * @return
+     */
+    Optional<User> findByUserId(String userId);
+
+    /**
      * 삭제여부에 따른 사용자를 Page별로 반환
      * @param delYn Y or N
      * @return
