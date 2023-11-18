@@ -2,6 +2,8 @@ package kr.or.futur.futurcertification.repository;
 
 import io.lettuce.core.dynamic.annotation.Param;
 import kr.or.futur.futurcertification.domain.entity.User;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
@@ -31,4 +33,11 @@ public interface UserRepository extends JpaRepository<User, Long> {
             "WHERE u.phoneNumber = :phoneNumber " +
             "AND u.delYn = false ")
     Optional<User> findByPhoneNumber(String phoneNumber);
+
+    /**
+     * 삭제여부에 따른 사용자를 Page별로 반환
+     * @param delYn Y or N
+     * @return
+     */
+    Page<User> findAllByDelYn(Pageable pageable, boolean delYn);
 }

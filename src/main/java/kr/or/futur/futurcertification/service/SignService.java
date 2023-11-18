@@ -7,6 +7,10 @@ import kr.or.futur.futurcertification.domain.dto.request.SignUpRequestDTO;
 import kr.or.futur.futurcertification.domain.dto.response.ConfirmCertificationResponseDTO;
 import kr.or.futur.futurcertification.domain.dto.response.SignInResultDTO;
 import kr.or.futur.futurcertification.domain.dto.response.SignUpResultDTO;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+
+import java.util.List;
 
 public interface SignService {
     /**
@@ -51,4 +55,14 @@ public interface SignService {
      * @return
      */
     UserDTO findUserId(String phoneNumber);
+
+    /**
+     * 사용자 데이터 가져오기
+     *
+     * @param pageable
+     * @param delYn
+     * @return
+     */
+    List<UserDTO> findAllByDelYn(Pageable pageable, boolean delYn);
+
 }

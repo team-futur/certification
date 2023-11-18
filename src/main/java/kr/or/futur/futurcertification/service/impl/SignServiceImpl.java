@@ -1,6 +1,7 @@
 package kr.or.futur.futurcertification.service.impl;
 
 import kr.or.futur.futurcertification.config.provider.JwtTokenProvider;
+import kr.or.futur.futurcertification.domain.common.CertificationCodeType;
 import kr.or.futur.futurcertification.domain.common.Status;
 import kr.or.futur.futurcertification.domain.dto.UserDTO;
 import kr.or.futur.futurcertification.domain.dto.request.ConfirmCertificationRequestDTO;
@@ -17,6 +18,8 @@ import kr.or.futur.futurcertification.service.SignService;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -24,6 +27,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDate;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -197,13 +201,22 @@ public class SignServiceImpl implements SignService {
     public void deleteUser(String userId) {
         User byUserId = userRepository.getByUserId(userId);
 
-        /* 0. 사용자 조회 못할 경우 */
+        /* 1. 사용자가 존재 유무 체크 */
         if (byUserId == null) {
             throw new UserNotFoundException();
         }
 
-        /* TODO Redis로 검증 */
-        /* 1. 사용자 삭제 */
+        /* 2. Redis에 인증번호를 요청한 기록이 있는지 확인 */
+        if (!redisService.existData(CertificationCodeType.DELETE.name() + "_" + byUserId.getPhoneNumber())) {
+            throw new CertificationCodeNotRequestedException();
+        }
+
+        /* 3. 인증번호가 일치하지 않은 경우 */
+        if(!redisService.existData(CertificationCodeType.DELETE.name() + "_result_" + byUserId.getPhoneNumber())) {
+            throw new CertificationCodeMismatchException();
+        }
+
+        /* 4. 사용자 삭제 */
         byUserId.setDelYn(true);
         userRepository.save(byUserId);
     }
@@ -214,5 +227,12 @@ public class SignServiceImpl implements SignService {
                 .orElseThrow(UserNotFoundException::new);
 
         return user.toDTO();
+    }
+
+    @Override
+    public List<UserDTO> findAllByDelYn(Pageable pageable, boolean delYn) {
+        return userRepository.findAllByDelYn(pageable, delYn).getContent().stream()
+                .map(User::toDTO)
+                .collect(Collectors.toList());
     }
 }

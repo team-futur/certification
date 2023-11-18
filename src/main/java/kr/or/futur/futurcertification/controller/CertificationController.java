@@ -105,6 +105,6 @@ public class CertificationController {
      */
     @DeleteMapping("/{userId}")
     public void delete(@PathVariable String userId) {
-        /* TODO 삭제 */
+        signService.deleteUser(userId);
     }
 }

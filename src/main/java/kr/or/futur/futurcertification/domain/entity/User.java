@@ -87,8 +87,9 @@ public class User extends BaseEntity implements UserDetails{
      * 삭제 여부
      */
     @Setter
+    @Builder.Default
     @Column(name = "user_del_yn", nullable = false)
-    private boolean delYn;
+    private boolean delYn = false;
 
 
     @Override

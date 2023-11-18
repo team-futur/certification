@@ -7,4 +7,5 @@ public enum CertificationCodeType {
     REGISTER,
     FIND_ID,
     FIND_PW,
+    DELETE,
 }
