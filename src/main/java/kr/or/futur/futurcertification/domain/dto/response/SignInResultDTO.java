@@ -11,6 +11,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class SignInResultDTO {
     private String token;
+    private String refreshToken;
     private boolean isSuccess;
     private String msg;
     private int code;

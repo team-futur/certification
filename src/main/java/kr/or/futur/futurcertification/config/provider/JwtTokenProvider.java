@@ -29,7 +29,12 @@ public class JwtTokenProvider {
 
     @Value("${springboot.jwt.secret}")
     private String secretKey;
-    private final long tokenValidMillisecond = 1000L * 60 * 60;
+
+    /* 1일 */
+    private static final long tokenValidMillisecond = 1000L * 60 * 60 * 24 ;
+
+    /* 30일 */
+    public static final long refreshTokenValidMillisecond = 1000L * 60 * 60 * 24 * 30;
 
     @PostConstruct
     protected void init() {
@@ -54,6 +59,18 @@ public class JwtTokenProvider {
 
         log.info("[JwtTokenProvider/createToken] 토큰 생성 완료");
         return token;
+    }
+
+    public String createRefreshToken(String userId) {
+        Date now = new Date();
+        Date validity = new Date(now.getTime() + refreshTokenValidMillisecond);
+
+        return Jwts.builder()
+                .setSubject(userId)
+                .setIssuedAt(now)
+                .setExpiration(validity)
+                .signWith(SignatureAlgorithm.HS256, secretKey) // secretKey는 서명에 사용되는 비밀 키
+                .compact();
     }
 
     public Authentication getAuthentication(String token) {

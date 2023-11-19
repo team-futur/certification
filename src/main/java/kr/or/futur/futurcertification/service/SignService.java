@@ -77,4 +77,12 @@ public interface SignService {
      */
     List<UserDTO> findAllByDelYn(Pageable pageable, boolean delYn);
 
+    /**
+     * 삭제 여부에 따른 단건 사용자 조회
+     * @param userId
+     * @param delYn
+     * @return
+     */
+    UserDTO findByUserIdAndDelYn(String userId, boolean delYn);
+
 }

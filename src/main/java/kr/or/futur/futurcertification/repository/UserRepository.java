@@ -39,7 +39,20 @@ public interface UserRepository extends JpaRepository<User, Long> {
      * @param userId
      * @return
      */
+    @Query("SELECT u " +
+            "FROM User u " +
+            "WHERE u.userId = :userId " +
+            "AND u.delYn = false ")
     Optional<User> findByUserId(String userId);
+
+    /**
+     * 삭제여부에 따른 사용자 조회
+     * SELECT * FROM USER WHERE USER_ID = ? AND DEL_YN = ?
+     * @param userId
+     * @param delYn
+     * @return
+     */
+    Optional<User> findByUserIdAndDelYn(String userId, boolean delYn);
 
     /**
      * 삭제여부에 따른 사용자를 Page별로 반환

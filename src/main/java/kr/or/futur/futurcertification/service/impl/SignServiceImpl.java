@@ -9,8 +9,10 @@ import kr.or.futur.futurcertification.domain.dto.request.SendCertificationReques
 import kr.or.futur.futurcertification.domain.dto.request.SignUpRequestDTO;
 import kr.or.futur.futurcertification.domain.dto.response.SignInResultDTO;
 import kr.or.futur.futurcertification.domain.dto.response.SignUpResultDTO;
+import kr.or.futur.futurcertification.domain.entity.RefreshToken;
 import kr.or.futur.futurcertification.domain.entity.User;
 import kr.or.futur.futurcertification.exception.*;
+import kr.or.futur.futurcertification.repository.RefreshTokenRepository;
 import kr.or.futur.futurcertification.repository.UserRepository;
 import kr.or.futur.futurcertification.service.RedisService;
 import kr.or.futur.futurcertification.service.SMSService;
@@ -25,6 +27,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -43,6 +46,8 @@ public class SignServiceImpl implements SignService {
 
     private final SMSService smsService;
 
+    private final RefreshTokenRepository refreshTokenRepository;
+
     private final Logger log = LoggerFactory.getLogger(SignServiceImpl.class);
 
     @Override
@@ -59,15 +64,18 @@ public class SignServiceImpl implements SignService {
             throw new DuplicateUserIdException("동일한 아이디의 사용자가 있습니다.");
         }
 
-        log.info("@@ : {}", userRepository.findByPhoneNumber(signUpRequestDTO.getPhoneNumber()).isPresent());
-
         /* 1. 이미 존재하는 휴대폰 번호 제외 */
         if(userRepository.findByPhoneNumber(signUpRequestDTO.getPhoneNumber()).isPresent()) {
             throw new DuplicatePhoneNumberException("동일한 휴대폰 번호가 있습니다.");
         }
 
+        /* 레디스에 인증번호가 확인된 여부 있는지 확인 */
+        if(!redisService.existData(CertificationCodeType.REGISTER.name() + "_result_" + signUpRequestDTO.getPhoneNumber())) {
+            throw new CertificationCodeExpiredException();
+        }
+
         /* 2. 레디스에 인증 번호 확인 됐는지 확인 */
-        if (!redisService.getData("REGISTER_result_" + signUpRequestDTO.getPhoneNumber()).equals("true")) {
+        if (!redisService.getData(CertificationCodeType.REGISTER.name() + "_result_" + signUpRequestDTO.getPhoneNumber()).equals("true")) {
             throw new CertificationCodeExpiredException();
         }
 
@@ -92,7 +100,6 @@ public class SignServiceImpl implements SignService {
                 .delYn(false)
                 .build();
 
-        log.info("3");
         /* 4. DB에 저장 */
         User savedUser = userRepository.save(user);
         SignUpResultDTO signUpResultDTO = null;
@@ -140,8 +147,23 @@ public class SignServiceImpl implements SignService {
         /* Step 3. 토큰 생성 및 전달 */
         String token = jwtTokenProvider.createToken(user.getUserId(), user.getRoles());
 
+        /* 리프레시 토큰 생성 */
+        String refreshToken = jwtTokenProvider.createRefreshToken(user.getUserId());
+        RefreshToken refreshTokenEntity = RefreshToken.builder()
+                .expiryDate(LocalDate.from(LocalDateTime.now().plusDays(30)))
+                .userIdx(user.getIdx())
+                .refreshToken(refreshToken)
+                .build();
+
+        /* 리프레시 토큰 저장 */
+        refreshTokenRepository.save(refreshTokenEntity);
+
         return SignInResultDTO.builder()
                 .token(token)
+                .refreshToken(refreshToken)
+                .code(HttpStatus.OK.value())
+                .msg("로그인을 성공했습니다.")
+                .isSuccess(Status.SUCCESS.value())
                 .build();
     }
 
@@ -265,5 +287,12 @@ public class SignServiceImpl implements SignService {
         return userRepository.findAllByDelYn(pageable, delYn).getContent().stream()
                 .map(User::toDTO)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public UserDTO findByUserIdAndDelYn(String userId, boolean delYn) {
+        return userRepository.findByUserIdAndDelYn(userId, delYn)
+                .orElseThrow(UserNotFoundException::new)
+                .toDTO();
     }
 }

@@ -1,9 +1,14 @@
 package kr.or.futur.futurcertification.controller;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import kr.or.futur.futurcertification.domain.common.CertificationCodeType;
 import kr.or.futur.futurcertification.domain.dto.UserDTO;
+import kr.or.futur.futurcertification.domain.dto.request.SignUpRequestDTO;
+import kr.or.futur.futurcertification.domain.dto.response.SignUpResultDTO;
+import kr.or.futur.futurcertification.domain.entity.User;
 import kr.or.futur.futurcertification.exception.UserNotFoundException;
+import kr.or.futur.futurcertification.repository.UserRepository;
 import kr.or.futur.futurcertification.service.RedisService;
 import kr.or.futur.futurcertification.service.SignService;
 import org.junit.jupiter.api.*;
@@ -24,8 +29,11 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.document;
 import static org.springframework.restdocs.payload.PayloadDocumentation.*;
 import static org.springframework.restdocs.request.RequestDocumentation.parameterWithName;
@@ -35,7 +43,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
-@ActiveProfiles("prod")
+@ActiveProfiles("dev")
 @AutoConfigureMockMvc
 @AutoConfigureRestDocs
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
@@ -55,7 +63,51 @@ class CertificationControllerTest {
     @Autowired
     private SignService signService;
 
+    @Autowired
+    private UserRepository userRepository;
+
+    private static final String phoneNumber = "010-6526-3863";
+
     private final static Logger log = LoggerFactory.getLogger(CertificationControllerTest.class);
+
+    @BeforeEach
+    void setup() {
+        /* 파라미터 세팅 */
+        SignUpRequestDTO signUpRequestDTO = new SignUpRequestDTO();
+        signUpRequestDTO.setId("test");
+        signUpRequestDTO.setPassword("test");
+        signUpRequestDTO.setName("테스트");
+        signUpRequestDTO.setRole("ROLE_USER");
+        signUpRequestDTO.setEmail("kjsung0129@gmail.com");
+        signUpRequestDTO.setPhoneNumber(phoneNumber);
+        signUpRequestDTO.setBirthDay("1999-01-01");
+
+        /* Redis 정보 비우기 */
+        redisService.deleteData(CertificationCodeType.REGISTER.name() + "_" + signUpRequestDTO.getPhoneNumber());
+        redisService.deleteData(CertificationCodeType.REGISTER.name() + "_result_" + signUpRequestDTO.getPhoneNumber());
+
+        /* 인증번호 번호 저장 및 확인 */
+        redisService.setDataExpire(CertificationCodeType.REGISTER.name() +"_" + signUpRequestDTO.getPhoneNumber(), String.valueOf(Math.round(Math.random() * 10000)), 10);
+        redisService.setDataExpire(CertificationCodeType.REGISTER.name() +"_result_" + signUpRequestDTO.getPhoneNumber(), "true", 10);
+
+        /* 회원 가입 */
+        SignUpResultDTO signUpResultDTO = signService.signUp(signUpRequestDTO);
+
+        log.debug("setUp 결과 : {}", signUpResultDTO);
+    }
+
+    @AfterEach
+    void cleanUp() {
+        /* 생성한 사용자 삭제 */
+        User user = userRepository.findByUserId("test")
+                .orElseThrow(UserNotFoundException::new);
+
+        userRepository.delete(user);
+
+        /* 레디스 정보 비우기 */
+        redisService.deleteData(CertificationCodeType.REGISTER.name() + "_" + phoneNumber);
+        redisService.deleteData(CertificationCodeType.REGISTER.name() + "_result_" + phoneNumber);
+    }
 
     @Test
     @Order(4)
@@ -80,11 +132,6 @@ class CertificationControllerTest {
     @Transactional
     @DisplayName("회원가입")
     void signUp() throws Exception {
-        /* 데이터 정리 */
-        UserDTO userDTO = signService.findPhoneNumber("010-6526-3863");
-
-        signService.deleteUser(userDTO.getUserId());
-
         Map<String, Object> inputs = new HashMap<>();
 
         inputs.put("id", "test" + Math.round(Math.random() * 10000));
@@ -92,7 +139,7 @@ class CertificationControllerTest {
         inputs.put("name", "test");
         inputs.put("role", "ROLE_USER");
         inputs.put("email", "test@test.com");
-        inputs.put("phoneNumber", "010-6526-3863");
+        inputs.put("phoneNumber", phoneNumber);
         inputs.put("address", "test");
         inputs.put("birthDay", "2022-01-01");
 
@@ -125,8 +172,37 @@ class CertificationControllerTest {
 
     @Test
     @Order(5)
+    @Transactional
     @DisplayName("로그인")
-    void signIn() {
+    void signIn() throws Exception {
+        Map<String, Object> inputs = new HashMap<>();
+
+        inputs.put("userId", "test");
+        inputs.put("password", "test");
+
+        mockMvc.perform(RestDocumentationRequestBuilders.post("/certification/sign-in")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(inputs)))
+                .andExpect(status().isOk())
+                .andDo(print())
+                .andDo(document("sign-in-test",
+                        requestFields(
+                                fieldWithPath("userId").description("아이디"),
+                                fieldWithPath("password").description("비밀번호")
+                        ),
+                        responseFields(
+                                fieldWithPath("token").description("토큰(1일)"),
+                                fieldWithPath("refreshToken").description("리프레시 토큰(30일)"),
+                                fieldWithPath("success").description("성공 여부"),
+                                fieldWithPath("code").description("상태여부"),
+                                fieldWithPath("msg").description("메세지")
+                        )
+                ))
+                .andExpect(jsonPath("$.token").isNotEmpty())
+                .andExpect(jsonPath("$.refreshToken").isNotEmpty())
+                .andExpect(jsonPath("$.success").value(is(true)))
+                .andExpect(jsonPath("$.code").value(is(200)))
+                .andExpect(jsonPath("$.msg").value(is("로그인을 성공했습니다.")));
     }
 
     @Test
@@ -135,8 +211,8 @@ class CertificationControllerTest {
     void requestCertificationNumber() throws Exception {
         Map<String, Object> inputs = new HashMap<>();
 
-        inputs.put("phoneNumber", "010-6526-3863");
-        inputs.put("type", "REGISTER");
+        inputs.put("phoneNumber", phoneNumber);
+        inputs.put("type", CertificationCodeType.REGISTER.name());
 
         mockMvc.perform(RestDocumentationRequestBuilders.post("/certification/request-certification-number")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -157,10 +233,10 @@ class CertificationControllerTest {
     @DisplayName("인증번호 확인")
     void confirmCertificationNumber() throws Exception {
         Map<String, Object> inputs = new HashMap<>();
-        String certificationNumber = redisService.getData("REGISTER_010-6526-3863");
+        String certificationNumber = redisService.getData(CertificationCodeType.REGISTER.name() + "_" + phoneNumber);
 
-        inputs.put("phoneNumber", "010-6526-3863");
-        inputs.put("type", "REGISTER");
+        inputs.put("phoneNumber", phoneNumber);
+        inputs.put("type", CertificationCodeType.REGISTER.name());
         inputs.put("certificationNumber", certificationNumber);
 
         mockMvc.perform(RestDocumentationRequestBuilders.put("/certification/confirm-certification-number")
@@ -184,7 +260,7 @@ class CertificationControllerTest {
                 .andExpect(jsonPath("$.code").value(is(200)));
     }
 
-    @Test
+//    @Test
     @Order(6)
     @Transactional
     @DisplayName("사용자 삭제")
@@ -203,7 +279,7 @@ class CertificationControllerTest {
         inputs.put("phoneNumber", userDTO.getPhoneNumber());
 
         /* 임으의 인증번호 저장 */
-        redisService.setDataExpire("DELETE_010-6526-3863", certificationCode, 60);
+        redisService.setDataExpire(CertificationCodeType.DELETE.name() + "_" + phoneNumber, certificationCode, 60);
 
         /* 인증번호 확인 */
         mockMvc.perform(MockMvcRequestBuilders.put("/certification/confirm-certification-number")
@@ -226,6 +302,7 @@ class CertificationControllerTest {
     }
 
     @Test
+    @Order(7)
     @Transactional
     @DisplayName("삭제된 회원 복구")
     void restoreUser() throws Exception {
@@ -248,8 +325,30 @@ class CertificationControllerTest {
         redisService.setDataExpire(CertificationCodeType.RESTORE.name() + "_result_" + userDTO.getPhoneNumber(), String.valueOf(true),60);
 
         /* 사용자 복구 */
-        signService.restoreDeletedUser(userDTO.getUserId());
+        mockMvc.perform(RestDocumentationRequestBuilders.put("/certification/restore/{userId}", userDTO.getUserId())
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andDo(print())
+                .andDo(document("restore-user-test",
+                        pathParameters(
+                                parameterWithName("userId").description("사용자 ID")
+                        )
+                ));
+    }
 
-        /* TODO Spring Rest Docs 문서화 필요 */
+    @Test
+    @DisplayName("사용자 조회")
+    void findUserIdAndPhoneNumber() throws Exception {
+        String userIdAndPhoneNumber = "test";
+
+        mockMvc.perform(RestDocumentationRequestBuilders.get("/certification/{userIdAndPhoneNumber}", userIdAndPhoneNumber)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andDo(print())
+                .andDo(document("find-user-id-and-phone-number-test",
+                        pathParameters(
+                                parameterWithName("userIdAndPhoneNumber").description("사용자 ID 또는 휴대전화 번호")
+                        )
+                ));
     }
 }

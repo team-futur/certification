@@ -1,5 +1,6 @@
 package kr.or.futur.futurcertification.controller;
 
+import kr.or.futur.futurcertification.domain.dto.UserDTO;
 import kr.or.futur.futurcertification.domain.dto.request.ConfirmCertificationRequestDTO;
 import kr.or.futur.futurcertification.domain.dto.request.SendCertificationRequestDTO;
 import kr.or.futur.futurcertification.domain.dto.request.SignInRequestDTO;
@@ -18,6 +19,8 @@ import org.springframework.web.bind.annotation.*;
 import javax.validation.Valid;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @RestController
 @RequiredArgsConstructor
@@ -49,7 +52,7 @@ public class CertificationController {
      * @return SignInResultDTO
      */
     @PostMapping("/sign-in")
-    public SignInResultDTO signIn(@Valid SignInRequestDTO signInRequestDTO) {
+    public SignInResultDTO signIn(@Valid @RequestBody SignInRequestDTO signInRequestDTO) {
         return signService.signIn(signInRequestDTO.getUserId(), signInRequestDTO.getPassword());
     }
 
@@ -78,7 +81,7 @@ public class CertificationController {
     /**
      * 인증번호 확인
      *
-     * @param certificationRequestDTO
+     * @param certificationRequestDTO {}
      * @return
      */
     @PutMapping("/confirm-certification-number")
@@ -101,6 +104,7 @@ public class CertificationController {
 
     /**
      * 사용자 삭제
+     *
      * @param userId
      */
     @DeleteMapping("/{userId}")
@@ -111,5 +115,56 @@ public class CertificationController {
     @PutMapping("/restore/{userId}")
     public void restoreUser(@PathVariable String userId) {
         signService.restoreDeletedUser(userId);
+    }
+
+    /**
+     * 사용자 이름으로 단건 조회
+     *
+     * @param userIdAndPhoneNumber 사용자 아이디 또는 휴대전화 번호
+     * @return
+     */
+    @GetMapping("/{userIdAndPhoneNumber}")
+    public UserDTO findUserIdAndPhoneNumber(@PathVariable String userIdAndPhoneNumber) {
+        String regex = "^010-\\d{4}-\\d{4}$";
+
+        Pattern pattern = Pattern.compile(regex);
+        Matcher matcher = pattern.matcher(userIdAndPhoneNumber);
+
+        UserDTO userDTO = null;
+
+        /* 전화번호 형식인 경우 */
+        if (matcher.matches()) {
+            userDTO = signService.findPhoneNumber(userIdAndPhoneNumber);
+        } else { /* 아이디 형식인 경우 */
+            userDTO = signService.findUserId(userIdAndPhoneNumber);
+        }
+
+        return userDTO;
+    }
+
+    /**
+     * 사용자 아이디 찾기
+     *
+     * @param userId String
+     * @return
+     */
+    @PostMapping("/find-user-id/{userId}")
+    public void findUserId(@PathVariable String userId) {
+        /* TODO 개발 필요 */
+    }
+
+    /**
+     * 비밀번호 찾기
+     *
+     * @param userId
+     */
+    @PostMapping("/reset-password/{userId}")
+    public void resetPassword(@PathVariable String userId) {
+        /*  TODO 개발 필요 */
+    }
+
+    @PostMapping("/refresh")
+    public void refreshToken() {
+        /* TODO 개발 필요 */
     }
 }
