@@ -37,8 +37,8 @@ public class SMSServiceImpl implements SMSService {
         }
 
         /* put data */
-        param.put("to", coolSMSConfiguration.getCallingNumber());
-        param.put("from", phoneNumber);
+        param.put("to", phoneNumber);
+        param.put("from", coolSMSConfiguration.getCallingNumber());
         param.put("type", "SMS");
         param.put("text", content);
 

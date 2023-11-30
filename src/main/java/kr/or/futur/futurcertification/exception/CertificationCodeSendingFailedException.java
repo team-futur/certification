@@ -14,4 +14,12 @@ public class CertificationCodeSendingFailedException extends RuntimeException {
     public CertificationCodeSendingFailedException(String errorMessage) {
         super(errorMessage);
     }
+
+    public CertificationCodeSendingFailedException(Throwable cause) {
+        super(errorMessage, cause);
+    }
+
+    public CertificationCodeSendingFailedException(String errorMessage, Throwable cause) {
+        super(errorMessage, cause);
+    }
 }

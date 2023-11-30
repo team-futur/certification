@@ -4,8 +4,7 @@ import kr.or.futur.futurcertification.domain.dto.UserDTO;
 import kr.or.futur.futurcertification.domain.dto.request.ConfirmCertificationRequestDTO;
 import kr.or.futur.futurcertification.domain.dto.request.SendCertificationRequestDTO;
 import kr.or.futur.futurcertification.domain.dto.request.SignUpRequestDTO;
-import kr.or.futur.futurcertification.domain.dto.response.SignInResultDTO;
-import kr.or.futur.futurcertification.domain.dto.response.SignUpResultDTO;
+import kr.or.futur.futurcertification.domain.dto.response.CommonResponseDTO;
 import org.springframework.data.domain.Pageable;
 
 import java.util.List;
@@ -16,7 +15,7 @@ public interface SignService {
      * @param signUpRequestDTO
      * @return
      */
-    SignUpResultDTO signUp(SignUpRequestDTO signUpRequestDTO);
+    CommonResponseDTO signUp(SignUpRequestDTO signUpRequestDTO);
 
 
     /**
@@ -26,7 +25,7 @@ public interface SignService {
      * @return
      * @throws RuntimeException
      */
-    SignInResultDTO signIn(String id, String password) throws RuntimeException;
+    CommonResponseDTO signIn(String id, String password) throws RuntimeException;
 
     /**
      * 인증번호 발송
@@ -85,4 +84,10 @@ public interface SignService {
      */
     UserDTO findByUserIdAndDelYn(String userId, boolean delYn);
 
+    /**
+     * 아이디 중복 체크
+     * @param userId
+     * @return
+     */
+    CommonResponseDTO isDuplicate(String userId);
 }

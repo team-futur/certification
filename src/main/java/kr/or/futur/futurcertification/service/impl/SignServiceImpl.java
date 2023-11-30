@@ -2,13 +2,11 @@ package kr.or.futur.futurcertification.service.impl;
 
 import kr.or.futur.futurcertification.config.provider.JwtTokenProvider;
 import kr.or.futur.futurcertification.domain.common.CertificationCodeType;
-import kr.or.futur.futurcertification.domain.common.Status;
 import kr.or.futur.futurcertification.domain.dto.UserDTO;
 import kr.or.futur.futurcertification.domain.dto.request.ConfirmCertificationRequestDTO;
 import kr.or.futur.futurcertification.domain.dto.request.SendCertificationRequestDTO;
 import kr.or.futur.futurcertification.domain.dto.request.SignUpRequestDTO;
-import kr.or.futur.futurcertification.domain.dto.response.SignInResultDTO;
-import kr.or.futur.futurcertification.domain.dto.response.SignUpResultDTO;
+import kr.or.futur.futurcertification.domain.dto.response.CommonResponseDTO;
 import kr.or.futur.futurcertification.domain.entity.RefreshToken;
 import kr.or.futur.futurcertification.domain.entity.User;
 import kr.or.futur.futurcertification.exception.*;
@@ -20,7 +18,6 @@ import kr.or.futur.futurcertification.service.SignService;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -30,6 +27,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -51,7 +49,7 @@ public class SignServiceImpl implements SignService {
     private final Logger log = LoggerFactory.getLogger(SignServiceImpl.class);
 
     @Override
-    public SignUpResultDTO signUp(SignUpRequestDTO signUpRequestDTO) {
+    public CommonResponseDTO signUp(SignUpRequestDTO signUpRequestDTO) {
         String id = signUpRequestDTO.getId();
         String name = signUpRequestDTO.getName();
         String password = signUpRequestDTO.getPassword();
@@ -102,38 +100,42 @@ public class SignServiceImpl implements SignService {
 
         /* 4. DB에 저장 */
         User savedUser = userRepository.save(user);
-        SignUpResultDTO signUpResultDTO = null;
+        CommonResponseDTO commonResponseDTO = null;
 
         /* 5. 저장이 맞게 되었는지 검증 */
         if (savedUser.getName().isEmpty()) {
             log.error("[SignServiceImpl/signUp] 회원가입 실패");
 
-            signUpResultDTO = SignUpResultDTO.builder()
-                    .isSuccess(Status.FAIL.value())
+            commonResponseDTO = CommonResponseDTO.builder()
+                    .isSuccess(true)
                     .code(HttpStatus.BAD_REQUEST.value())
                     .msg("회원가입을 성공했습니다.")
                     .build();
         } else {
             log.info("[SignServiceImpl/signUp] 회원가입 성공");
 
-            signUpResultDTO = SignUpResultDTO.builder()
-                    .isSuccess(Status.SUCCESS.value())
+            commonResponseDTO = CommonResponseDTO.builder()
+                    .isSuccess(false)
                     .code(HttpStatus.OK.value())
                     .msg("회원가입을 성공했습니다.")
                     .build();
 
         }
 
-        return signUpResultDTO;
+        return commonResponseDTO;
     }
 
     @Override
-    public SignInResultDTO signIn(String id, String password) throws RuntimeException {
+    public CommonResponseDTO signIn(String id, String password) throws RuntimeException {
         log.info("[SignServiceImpl/signIn] 로그인 시도");
+
+        log.info("userId : {}", id);
+        log.info("password : {}", password);
 
         String loginFailMsg = "입력한 정보가 일치하지 않습니다.";
         User user = userRepository.getByUserId(id);
 
+        log.info("user : {}", user);
         /* id와 맞는 User가 있는지 조회 */
         if (user == null) {
             throw new LoginFailedException(loginFailMsg);
@@ -158,12 +160,11 @@ public class SignServiceImpl implements SignService {
         /* 리프레시 토큰 저장 */
         refreshTokenRepository.save(refreshTokenEntity);
 
-        return SignInResultDTO.builder()
-                .token(token)
-                .refreshToken(refreshToken)
+        return CommonResponseDTO.builder()
+                .isSuccess(true)
                 .code(HttpStatus.OK.value())
                 .msg("로그인을 성공했습니다.")
-                .isSuccess(Status.SUCCESS.value())
+                .data(Map.of("token", token, "refreshToken", refreshToken))
                 .build();
     }
 
@@ -180,18 +181,13 @@ public class SignServiceImpl implements SignService {
                redisService.deleteData(redisKey);
            }
 
-           int requestCnt = redisService.getData(redisCntKey) == null ? 0 : Integer.parseInt(redisService.getData(redisCntKey));
-
-           if (requestCnt > 4) {
-               throw new CertificationCodeSendingFailedException("일정 시간동안 인증번호를 요청하실 수 없습니다.");
-           }
+           /* TODO 요청 횟수 제한 */
 
            /* 2. redis에 저장 및 인증번호 발송 */
            redisService.setDataExpire(redisKey, certificationNumber, 180);
-           redisService.setDataExpire(redisCntKey, String.valueOf(requestCnt + 1), 600);
            smsService.sendCertificationSMS(sendCertificationRequestDTO.getPhoneNumber(), certificationNumber);
        } catch (Exception e) {
-           throw new CertificationCodeSendingFailedException();
+           throw new CertificationCodeSendingFailedException(e);
        }
     }
 
@@ -294,5 +290,16 @@ public class SignServiceImpl implements SignService {
         return userRepository.findByUserIdAndDelYn(userId, delYn)
                 .orElseThrow(UserNotFoundException::new)
                 .toDTO();
+    }
+
+    @Override
+    public CommonResponseDTO isDuplicate(String userId) {
+        boolean isPresent = userRepository.findByUserId(userId).isPresent();
+
+        return CommonResponseDTO.builder()
+                .isSuccess(!isPresent)
+                .msg(!isPresent ? "중복된 아이디가 존재하지 않습니다." : "중복된 아이디가 존재합니다.")
+                .code(!isPresent ? HttpStatus.OK.value() : HttpStatus.BAD_REQUEST.value())
+                .build();
     }
 }

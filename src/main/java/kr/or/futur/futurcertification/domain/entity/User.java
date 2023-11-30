@@ -21,6 +21,7 @@ import java.util.stream.Collectors;
 @Builder
 @Table(name = "user")
 @Entity
+@ToString
 @EntityListeners(AuditingEntityListener.class)
 public class User extends BaseEntity implements UserDetails{
 

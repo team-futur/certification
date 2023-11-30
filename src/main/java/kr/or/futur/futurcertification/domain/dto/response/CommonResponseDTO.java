@@ -2,19 +2,23 @@ package kr.or.futur.futurcertification.domain.dto.response;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Getter;
+import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.springframework.http.HttpStatus;
 
+import java.util.Map;
+
+@Data
 @Builder
-@AllArgsConstructor
 @NoArgsConstructor
-@Getter
-public class ErrorResponseDTO {
-
-    private String msg;
+@AllArgsConstructor
+public class CommonResponseDTO {
 
     private int code;
 
+    private String msg;
+
+    private Map<String, Object> data;
+
     private boolean isSuccess;
+
 }

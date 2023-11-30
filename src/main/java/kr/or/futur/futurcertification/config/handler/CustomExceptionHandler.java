@@ -23,6 +23,8 @@ public class CustomExceptionHandler {
                 .status(HttpStatus.BAD_REQUEST)
                 .body(ErrorResponseDTO.builder()
                         .msg(errorMessage)
+                        .code(HttpStatus.BAD_REQUEST.value())
+                        .isSuccess(false)
                         .build());
     }
 
@@ -40,18 +42,26 @@ public class CustomExceptionHandler {
                 .status(HttpStatus.BAD_REQUEST)
                 .body(ErrorResponseDTO.builder()
                         .msg(e.getMessage())
+                        .code(HttpStatus.BAD_REQUEST.value())
+                        .isSuccess(false)
                         .build());
     }
 
     @ExceptionHandler({
             CertificationCodeSendingFailedException.class,
-            SMSSendingFailedException.class
+            SMSSendingFailedException.class,
+            RuntimeException.class
     })
     public ResponseEntity<ErrorResponseDTO> handleServerException(RuntimeException e) {
+
+        e.printStackTrace();
+
         return ResponseEntity
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(ErrorResponseDTO.builder()
                         .msg(e.getMessage())
+                        .code(HttpStatus.INTERNAL_SERVER_ERROR.value())
+                        .isSuccess(false)
                         .build());
     }
 }

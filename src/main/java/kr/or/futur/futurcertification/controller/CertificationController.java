@@ -1,13 +1,13 @@
 package kr.or.futur.futurcertification.controller;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import kr.or.futur.futurcertification.domain.dto.UserDTO;
 import kr.or.futur.futurcertification.domain.dto.request.ConfirmCertificationRequestDTO;
 import kr.or.futur.futurcertification.domain.dto.request.SendCertificationRequestDTO;
 import kr.or.futur.futurcertification.domain.dto.request.SignInRequestDTO;
 import kr.or.futur.futurcertification.domain.dto.request.SignUpRequestDTO;
-import kr.or.futur.futurcertification.domain.dto.response.ConfirmCertificationResponseDTO;
-import kr.or.futur.futurcertification.domain.dto.response.SignInResultDTO;
-import kr.or.futur.futurcertification.domain.dto.response.SignUpResultDTO;
+import kr.or.futur.futurcertification.domain.dto.response.*;
+import kr.or.futur.futurcertification.exception.DeleteFailedException;
 import kr.or.futur.futurcertification.service.SignService;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -30,6 +30,8 @@ public class CertificationController {
 
     private final SignService signService;
 
+    private final ObjectMapper objectMapper;
+
     /**
      * 연결됐는지 여부 판별하는 Handler
      *
@@ -49,10 +51,10 @@ public class CertificationController {
     /**
      * 로그인
      *
-     * @return SignInResultDTO
+     * @return CommonResponseDTO
      */
     @PostMapping("/sign-in")
-    public SignInResultDTO signIn(@Valid @RequestBody SignInRequestDTO signInRequestDTO) {
+    public CommonResponseDTO signIn(@Valid @RequestBody SignInRequestDTO signInRequestDTO) {
         return signService.signIn(signInRequestDTO.getUserId(), signInRequestDTO.getPassword());
     }
 
@@ -60,10 +62,10 @@ public class CertificationController {
      * 회원가입
      *
      * @param signUpRequestDTO {}
-     * @return SignUpResultDTO
+     * @return CommonResponseDTO
      */
     @PostMapping("/sign-up")
-    public SignUpResultDTO signUp(@Valid @RequestBody SignUpRequestDTO signUpRequestDTO) {
+    public CommonResponseDTO signUp(@Valid @RequestBody SignUpRequestDTO signUpRequestDTO) {
         return signService.signUp(signUpRequestDTO);
     }
 
@@ -74,8 +76,15 @@ public class CertificationController {
      * @return CertificationResponseDTO
      */
     @PostMapping("/request-certification-number")
-    public void requestCertificationNumber(@Valid @RequestBody SendCertificationRequestDTO sendCertificationRequestDTO) {
+    public CommonResponseDTO requestCertificationNumber(@Valid @RequestBody SendCertificationRequestDTO sendCertificationRequestDTO) {
+
         signService.sendCertificationNumber(sendCertificationRequestDTO);
+
+        return CommonResponseDTO.builder()
+                .code(HttpStatus.OK.value())
+                .msg("인증번호를 전송하였습니다.")
+                .isSuccess(true)
+                .build();
     }
 
     /**
@@ -85,12 +94,15 @@ public class CertificationController {
      * @return
      */
     @PutMapping("/confirm-certification-number")
-    public ConfirmCertificationResponseDTO confirmCertificationNumber(@Valid @RequestBody ConfirmCertificationRequestDTO certificationRequestDTO) {
+    public CommonResponseDTO confirmCertificationNumber(@Valid @RequestBody ConfirmCertificationRequestDTO certificationRequestDTO) {
+
         boolean isEqual = signService.confirmCertificationNumber(certificationRequestDTO);
 
-        return ConfirmCertificationResponseDTO.builder()
-                .code(HttpStatus.OK.value())
-                .isEqual(isEqual)
+        return CommonResponseDTO
+                .builder()
+                .isSuccess(isEqual)
+                .msg(isEqual ? "인증번호 확인에 성공" : "인증번호 확인에 실패")
+                .code(isEqual ? HttpStatus.OK.value() : HttpStatus.BAD_REQUEST.value())
                 .build();
     }
 
@@ -104,27 +116,40 @@ public class CertificationController {
 
     /**
      * 사용자 삭제
-     *
      * @param userId
+     * @return CommonResponseDTO
      */
     @DeleteMapping("/{userId}")
-    public void delete(@PathVariable String userId) {
+    public CommonResponseDTO delete(@PathVariable String userId) {
+
         signService.deleteUser(userId);
+
+        return CommonResponseDTO.builder()
+                .msg(userId + " 사용자를 삭제하였습니다.")
+                .code(HttpStatus.OK.value())
+                .isSuccess(true)
+                .build();
     }
 
     @PutMapping("/restore/{userId}")
-    public void restoreUser(@PathVariable String userId) {
+    public CommonResponseDTO restoreUser(@PathVariable String userId) {
+
         signService.restoreDeletedUser(userId);
+
+        return CommonResponseDTO.builder()
+                .isSuccess(true)
+                .code(HttpStatus.OK.value())
+                .msg(userId + " 사용자를 복구하였습니다.")
+                .build();
     }
 
     /**
      * 사용자 이름으로 단건 조회
-     *
      * @param userIdAndPhoneNumber 사용자 아이디 또는 휴대전화 번호
-     * @return
+     * @return CommonResponseDTO
      */
     @GetMapping("/{userIdAndPhoneNumber}")
-    public UserDTO findUserIdAndPhoneNumber(@PathVariable String userIdAndPhoneNumber) {
+    public CommonResponseDTO findUserIdAndPhoneNumber(@PathVariable String userIdAndPhoneNumber) {
         String regex = "^010-\\d{4}-\\d{4}$";
 
         Pattern pattern = Pattern.compile(regex);
@@ -139,7 +164,11 @@ public class CertificationController {
             userDTO = signService.findUserId(userIdAndPhoneNumber);
         }
 
-        return userDTO;
+        return CommonResponseDTO.builder()
+                .code(HttpStatus.OK.value())
+                .isSuccess(true)
+                .data(objectMapper.convertValue(userDTO, Map.class))
+                .build();
     }
 
     /**
@@ -148,14 +177,24 @@ public class CertificationController {
      * @param userId String
      * @return
      */
-    @PostMapping("/find-user-id/{userId}")
-    public void findUserId(@PathVariable String userId) {
-        /* TODO 개발 필요 */
+    @GetMapping("/find-user-id/{userId}")
+    public CommonResponseDTO findUserId(@PathVariable String userId) {
+        UserDTO userDTO = signService.findUserId(userId);
+        Map<String, Object> userIdInfo = new HashMap<>();
+        userId = userDTO.getUserId();
+
+        /* ID 일부 가리기 */
+        userIdInfo.put("userId", userId.substring(0, 5) + "...");
+
+        return CommonResponseDTO.builder()
+                .code(HttpStatus.OK.value())
+                .isSuccess(true)
+                .data(userIdInfo)
+                .build();
     }
 
     /**
-     * 비밀번호 찾기
-     *
+     * 비밀번호 변경
      * @param userId
      */
     @PostMapping("/reset-password/{userId}")
@@ -166,5 +205,10 @@ public class CertificationController {
     @PostMapping("/refresh")
     public void refreshToken() {
         /* TODO 개발 필요 */
+    }
+
+    @PostMapping("/duplicate/{userId}")
+    public CommonResponseDTO isDuplicateUserId(@PathVariable String userId) {
+        return signService.isDuplicate(userId);
     }
 }
