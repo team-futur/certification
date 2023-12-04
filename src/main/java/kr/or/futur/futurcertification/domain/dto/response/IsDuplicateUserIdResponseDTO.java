@@ -1,6 +1,5 @@
 package kr.or.futur.futurcertification.domain.dto.response;
 
-import kr.or.futur.futurcertification.domain.dto.AbstractDTO;
 import lombok.*;
 
 /**
@@ -15,5 +14,6 @@ public class IsDuplicateUserIdResponseDTO {
     int code;
 
     String msg;
+
     boolean isSuccess;
 }

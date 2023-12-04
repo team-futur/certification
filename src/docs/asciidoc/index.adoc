@@ -11,8 +11,23 @@
 == 유레카 연결 여부
 include::src/docs/asciidoc/connected.adoc[]
 
+== 인증번호 요청
+include::src/docs/asciidoc/requestCertificationNumber.adoc[]
+
+== 인증번호 확인
+include::src/docs/asciidoc/confirmCertificationNumber.adoc[]
+
 == 회원가입
 include::src/docs/asciidoc/signUp.adoc[]
 
-== 인증번호 요청
-include::src/docs/asciidoc/requestCertificationNumber.adoc[]
+== 로그인
+include::src/docs/asciidoc/singIn.adoc[]
+
+== 사용자 복구
+include::src/docs/asciidoc/restoreUserId.adoc[]
+
+== 사용자 삭제
+include::src/docs/asciidoc/deleteUserId.adoc[]
+
+== 아이디 또는 비밀번호 찾기
+include::src/docs/asciidoc/findUserIdAndPhoneNumber.adoc[]

@@ -107,15 +107,15 @@ public class SignServiceImpl implements SignService {
             log.error("[SignServiceImpl/signUp] 회원가입 실패");
 
             commonResponseDTO = CommonResponseDTO.builder()
-                    .isSuccess(true)
+                    .isSuccess(false)
                     .code(HttpStatus.BAD_REQUEST.value())
-                    .msg("회원가입을 성공했습니다.")
+                    .msg("회원가입을 실패하였습니다.")
                     .build();
         } else {
             log.info("[SignServiceImpl/signUp] 회원가입 성공");
 
             commonResponseDTO = CommonResponseDTO.builder()
-                    .isSuccess(false)
+                    .isSuccess(true)
                     .code(HttpStatus.OK.value())
                     .msg("회원가입을 성공했습니다.")
                     .build();
@@ -244,7 +244,7 @@ public class SignServiceImpl implements SignService {
     @Override
     public void restoreDeletedUser(String userId) {
         /* 사용자 조회 */
-        User user = userRepository.findByUserId(userId)
+        User user = userRepository.findByUserIdAndDelYn(userId, true)
                 .orElseThrow(UserNotFoundException::new);
 
         /* 인증 번호 요청 확인 */

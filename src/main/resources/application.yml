@@ -7,6 +7,17 @@ spring:
   # Application Info
   application:
     name: certification-service
+  datasource:
+    driver-class-name: org.mariadb.jdbc.Driver
+    url: jdbc:mariadb://210.114.22.192:5506/pesticide
+    username: root
+    password: k76639950
+  # Redis Info
+  data:
+    redis:
+      host: 210.114.22.192
+      port: 6379
+      password: a1234567890
   # JPA Info
   jpa:
     hibernate:
@@ -21,9 +32,19 @@ eureka:
     register-with-eureka: true
     fetch-registry: true
     service-url:
-      defaultZone: http://127.0.0.1:8761/eureka
+      defaultZone: http://host.docker.internal:8761/eureka
   instance:
     instance-id: ${spring.application.name}:${spring.application.instance_id:${random.value}}
+
+springboot:
+  # JWT Info
+  jwt:
+    secret: futur-prod-certification
+  # CoolSMS Info
+  coolsms:
+    apiKey: NCS4KURZ0LVGLEUL
+    secretKey: V6BVTVPJ6Y9VU5BRMVDHGGQ9ESZ5L7DH
+    callingNumber: 01065263863
 
 
 

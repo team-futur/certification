@@ -1,0 +1,10 @@
+====== 요청 형식
+include::{snippets}/restore-user-id/http-request.adoc[]
+====== Request Body
+include::{snippets}/restore-user-id/request-body.adoc[]
+====== 응답 형식
+include::{snippets}/restore-user-id/http-response.adoc[]
+====== Response Body
+include::{snippets}/restore-user-id/response-body.adoc[]
+====== Try with curl
+include::{snippets}/restore-user-id/curl-request.adoc[]

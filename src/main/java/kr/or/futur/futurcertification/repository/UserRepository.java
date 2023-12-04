@@ -45,6 +45,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
             "AND u.delYn = false ")
     Optional<User> findByUserId(String userId);
 
+
     /**
      * 삭제여부에 따른 사용자 조회
      * SELECT * FROM USER WHERE USER_ID = ? AND DEL_YN = ?

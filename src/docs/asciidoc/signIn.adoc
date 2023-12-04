@@ -1,0 +1,10 @@
+====== 요청 형식
+include::{snippets}/sign-in-test/http-request.adoc[]
+====== Request Body
+include::{snippets}/sign-in-test/request-body.adoc[]
+====== 응답 형식
+include::{snippets}/sign-in-test/http-response.adoc[]
+====== Response Body
+include::{snippets}/sign-in-test/response-body.adoc[]
+====== Try with curl
+include::{snippets}/sign-in-test/curl-request.adoc[]

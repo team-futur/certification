@@ -1,0 +1,10 @@
+====== 요청 형식
+include::{snippets}/delete-user-id/http-request.adoc[]
+====== Request Body
+include::{snippets}/delete-user-id/request-body.adoc[]
+====== 응답 형식
+include::{snippets}/delete-user-id/http-response.adoc[]
+====== Response Body
+include::{snippets}/delete-user-id/response-body.adoc[]
+====== Try with curl
+include::{snippets}/delete-user-id/curl-request.adoc[]

@@ -6,8 +6,7 @@ import kr.or.futur.futurcertification.domain.dto.request.ConfirmCertificationReq
 import kr.or.futur.futurcertification.domain.dto.request.SendCertificationRequestDTO;
 import kr.or.futur.futurcertification.domain.dto.request.SignInRequestDTO;
 import kr.or.futur.futurcertification.domain.dto.request.SignUpRequestDTO;
-import kr.or.futur.futurcertification.domain.dto.response.*;
-import kr.or.futur.futurcertification.exception.DeleteFailedException;
+import kr.or.futur.futurcertification.domain.dto.response.CommonResponseDTO;
 import kr.or.futur.futurcertification.service.SignService;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
