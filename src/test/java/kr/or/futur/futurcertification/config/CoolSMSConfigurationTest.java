@@ -10,7 +10,7 @@ import org.springframework.test.context.ActiveProfiles;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-@ActiveProfiles("prod")
+@ActiveProfiles("test")
 @SpringBootTest
 class CoolSMSConfigurationTest {
 

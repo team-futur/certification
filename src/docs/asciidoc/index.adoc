@@ -31,3 +31,6 @@ include::src/docs/asciidoc/deleteUserId.adoc[]
 
 == 아이디 또는 비밀번호 찾기
 include::src/docs/asciidoc/findUserIdAndPhoneNumber.adoc[]
+
+== 아이디 찾기
+include::src/docs/asciidoc/findLostUserId.adoc[]

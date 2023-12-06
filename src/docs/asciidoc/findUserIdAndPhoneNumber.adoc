@@ -1,7 +1,7 @@
 ====== 요청 형식
 include::{snippets}/find-user-id-and-phone-number-test/http-request.adoc[]
 ====== Request Body
-include::{snippets}/find-user-id-and-phone-number-test/request-body.adoc[]
+include::{snippets}/find-user-id-and-phone-number-test/path-parameters.adoc[]
 ====== 응답 형식
 include::{snippets}/find-user-id-and-phone-number-test/http-response.adoc[]
 ====== Response Body

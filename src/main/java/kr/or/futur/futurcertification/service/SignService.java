@@ -1,7 +1,9 @@
 package kr.or.futur.futurcertification.service;
 
+import kr.or.futur.futurcertification.domain.common.CertificationCodeType;
 import kr.or.futur.futurcertification.domain.dto.UserDTO;
 import kr.or.futur.futurcertification.domain.dto.request.ConfirmCertificationRequestDTO;
+import kr.or.futur.futurcertification.domain.dto.request.FindLostUserIdRequestDTO;
 import kr.or.futur.futurcertification.domain.dto.request.SendCertificationRequestDTO;
 import kr.or.futur.futurcertification.domain.dto.request.SignUpRequestDTO;
 import kr.or.futur.futurcertification.domain.dto.response.CommonResponseDTO;
@@ -10,6 +12,7 @@ import org.springframework.data.domain.Pageable;
 import java.util.List;
 
 public interface SignService {
+
     /**
      * 회원가입
      * @param signUpRequestDTO
@@ -90,4 +93,13 @@ public interface SignService {
      * @return
      */
     CommonResponseDTO isDuplicate(String userId);
+
+    /**
+     *
+     * @param findLostUserIdRequestDTO
+     * @return
+     */
+    CommonResponseDTO findLostUserId(FindLostUserIdRequestDTO findLostUserIdRequestDTO);
+
+
 }

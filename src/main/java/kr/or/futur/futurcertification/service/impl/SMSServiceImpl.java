@@ -11,6 +11,7 @@ import net.nurigo.java_sdk.exceptions.CoolsmsException;
 import org.json.simple.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
@@ -23,11 +24,22 @@ public class SMSServiceImpl implements SMSService {
     private final CoolSMSConfiguration coolSMSConfiguration;
     private final Logger log = LoggerFactory.getLogger(SMSServiceImpl.class);
 
+    private final Environment environment;
+
     @Override
     public Map<String, Object> sendSMS(String phoneNumber, String content) {
+        Map<String, Object> sendResult = new HashMap<>();
+
+        /* 테스트일 떄 문자 발송 안되도록 */
+        String[] activeProfiles = environment.getActiveProfiles();
+
+        if ("test".equals(activeProfiles[0])) {
+            sendResult.put("success_count", 1);
+            return sendResult;
+        }
+
         Message message = new Message(coolSMSConfiguration.getApiKey(), coolSMSConfiguration.getSecretKey());
         HashMap<String, String> param = new HashMap<>();
-        Map<String, Object> sendResult = new HashMap<>();
         ObjectMapper objectMapper = new ObjectMapper();
         JSONObject sendJSONResult;
 

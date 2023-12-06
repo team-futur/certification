@@ -23,17 +23,17 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.HashMap;
 import java.util.Map;
 
+import static org.hamcrest.Matchers.in;
 import static org.hamcrest.Matchers.is;
 import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.document;
 import static org.springframework.restdocs.payload.PayloadDocumentation.*;
-import static org.springframework.restdocs.request.RequestDocumentation.parameterWithName;
-import static org.springframework.restdocs.request.RequestDocumentation.pathParameters;
+import static org.springframework.restdocs.request.RequestDocumentation.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
-@ActiveProfiles("prod")
+@ActiveProfiles("test")
 @AutoConfigureMockMvc
 @AutoConfigureRestDocs
 class CertificationControllerTest {
@@ -56,6 +56,7 @@ class CertificationControllerTest {
     private UserRepository userRepository;
 
     private static final String phoneNumber = "010-6526-3863";
+//    private static final String phoneNumber = "010-2355-7934";
 
     private final static Logger log = LoggerFactory.getLogger(CertificationControllerTest.class);
 
@@ -359,5 +360,63 @@ class CertificationControllerTest {
                 .andExpect(jsonPath("$.data.phoneNumber").value(is("010-6526-3863")))
                 .andExpect(jsonPath("$.code").value(is(200)))
                 .andExpect(jsonPath("$.success").value(is(true)));
+    }
+
+    @Test
+    @DisplayName("아이디 중복 체크")
+    void isDuplicateUserId() throws Exception {
+        String userId = "test12344";
+
+        mockMvc.perform(RestDocumentationRequestBuilders.post("/certification/duplicate/{userId}", userId))
+                .andExpect(status().isOk())
+                .andDo(print())
+                .andDo(document("is-duplicate-user-id-test"))
+                .andExpect(jsonPath("$.code").value(is(200)))
+                .andExpect(jsonPath("$.msg").value(is("중복된 아이디가 존재하지 않습니다.")))
+                .andExpect(jsonPath("$.success").value(is(true)));
+    }
+
+    @Test
+    @DisplayName("사용자 아이디 찾기")
+    void findUserId() throws Exception {
+        Map<String, Object> inputs = new HashMap<>();
+
+        inputs.put("type", CertificationCodeType.FIND_ID);
+        inputs.put("phoneNumber", phoneNumber);
+        inputs.put("userId", "test12345");
+
+        /* 인증번호 요청 */
+        requestCertificationCode(inputs);
+
+        String certificationNumber = redisService.getData(CertificationCodeType.FIND_ID.name() + "_" + phoneNumber);
+        inputs.put("certificationNumber", certificationNumber);
+
+        /* 인증번호 확인 */
+        confirmCertificationCode(inputs);
+
+        /* 서버 요청 */
+        mockMvc.perform(RestDocumentationRequestBuilders.get("/certification/find-lost-user-id")
+                        .param("type", CertificationCodeType.FIND_ID.name())
+                        .param("phoneNumber", phoneNumber)
+                        .param("userId", "test12345"))
+                .andExpect(status().isOk())
+                .andDo(print())
+                .andDo(document("find-user-id-test",
+                        requestParameters(
+                                parameterWithName("userId").description("아이디"),
+                                parameterWithName("type").description("인증번호 타입(REGISTER/FIND_ID/FIND_PW)"),
+                                parameterWithName("phoneNumber").description("휴대전화 번호")
+                        ),
+                        responseFields(
+                                fieldWithPath("code").description("응답 코드"),
+                                fieldWithPath("data").description("반환 데이터"),
+                                fieldWithPath("success").description("성공 여부"),
+                                fieldWithPath("msg").description("메세지"),
+                                fieldWithPath("data.userId").description("일부 사용자 아이디")
+                        )
+                ))
+                .andExpect(jsonPath("$.success").value(is(true)))
+                .andExpect(jsonPath("$.code").value(is(200)))
+                .andExpect(jsonPath("$.data.userId").value(is("test1***")));
     }
 }

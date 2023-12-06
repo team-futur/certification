@@ -8,7 +8,7 @@ import org.springframework.test.context.ActiveProfiles;
 import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
-@ActiveProfiles("local")
+@ActiveProfiles("test")
 class SignServiceImplTest {
 
     private final Logger log = LoggerFactory.getLogger(SignServiceImpl.class);

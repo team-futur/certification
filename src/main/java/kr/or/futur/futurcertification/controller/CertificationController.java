@@ -2,10 +2,7 @@ package kr.or.futur.futurcertification.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import kr.or.futur.futurcertification.domain.dto.UserDTO;
-import kr.or.futur.futurcertification.domain.dto.request.ConfirmCertificationRequestDTO;
-import kr.or.futur.futurcertification.domain.dto.request.SendCertificationRequestDTO;
-import kr.or.futur.futurcertification.domain.dto.request.SignInRequestDTO;
-import kr.or.futur.futurcertification.domain.dto.request.SignUpRequestDTO;
+import kr.or.futur.futurcertification.domain.dto.request.*;
 import kr.or.futur.futurcertification.domain.dto.response.CommonResponseDTO;
 import kr.or.futur.futurcertification.service.SignService;
 import lombok.RequiredArgsConstructor;
@@ -130,6 +127,11 @@ public class CertificationController {
                 .build();
     }
 
+    /**
+     * 아이디 복구
+     * @param userId 사용자 아이디
+     * @return
+     */
     @PutMapping("/restore/{userId}")
     public CommonResponseDTO restoreUser(@PathVariable String userId) {
 
@@ -173,23 +175,12 @@ public class CertificationController {
     /**
      * 사용자 아이디 찾기
      *
-     * @param userId String
+     * @param findLostUserIdRequestDTO
      * @return
      */
-    @GetMapping("/find-user-id/{userId}")
-    public CommonResponseDTO findUserId(@PathVariable String userId) {
-        UserDTO userDTO = signService.findUserId(userId);
-        Map<String, Object> userIdInfo = new HashMap<>();
-        userId = userDTO.getUserId();
-
-        /* ID 일부 가리기 */
-        userIdInfo.put("userId", userId.substring(0, 5) + "...");
-
-        return CommonResponseDTO.builder()
-                .code(HttpStatus.OK.value())
-                .isSuccess(true)
-                .data(userIdInfo)
-                .build();
+    @GetMapping("/find-lost-user-id")
+    public CommonResponseDTO findUserId(@Valid FindLostUserIdRequestDTO findLostUserIdRequestDTO) {
+        return signService.findLostUserId(findLostUserIdRequestDTO);
     }
 
     /**
@@ -201,11 +192,19 @@ public class CertificationController {
         /*  TODO 개발 필요 */
     }
 
+    /**
+     * 리프레쉬 토큰 발급
+     */
     @PostMapping("/refresh")
     public void refreshToken() {
         /* TODO 개발 필요 */
     }
 
+    /**
+     * 아이디 중복 체크
+     * @param userId
+     * @return
+     */
     @PostMapping("/duplicate/{userId}")
     public CommonResponseDTO isDuplicateUserId(@PathVariable String userId) {
         return signService.isDuplicate(userId);

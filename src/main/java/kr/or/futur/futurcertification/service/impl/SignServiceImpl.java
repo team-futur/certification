@@ -4,6 +4,7 @@ import kr.or.futur.futurcertification.config.provider.JwtTokenProvider;
 import kr.or.futur.futurcertification.domain.common.CertificationCodeType;
 import kr.or.futur.futurcertification.domain.dto.UserDTO;
 import kr.or.futur.futurcertification.domain.dto.request.ConfirmCertificationRequestDTO;
+import kr.or.futur.futurcertification.domain.dto.request.FindLostUserIdRequestDTO;
 import kr.or.futur.futurcertification.domain.dto.request.SendCertificationRequestDTO;
 import kr.or.futur.futurcertification.domain.dto.request.SignUpRequestDTO;
 import kr.or.futur.futurcertification.domain.dto.response.CommonResponseDTO;
@@ -26,6 +27,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -300,6 +302,35 @@ public class SignServiceImpl implements SignService {
                 .isSuccess(!isPresent)
                 .msg(!isPresent ? "중복된 아이디가 존재하지 않습니다." : "중복된 아이디가 존재합니다.")
                 .code(!isPresent ? HttpStatus.OK.value() : HttpStatus.BAD_REQUEST.value())
+                .build();
+    }
+
+    @Override
+    public CommonResponseDTO findLostUserId(FindLostUserIdRequestDTO findLostUserIdRequestDTO) {
+        Map<String, Object> userIdInfo = new HashMap<>();
+
+        /* 인증 번호 요청 확인 */
+        if (!redisService.existData(CertificationCodeType.FIND_ID.name() + "_" + findLostUserIdRequestDTO.getPhoneNumber())) {
+            throw new CertificationCodeNotRequestedException();
+        }
+
+        /* 인증번호가 일치하지 않은 경우 */
+        if(!redisService.getData(CertificationCodeType.FIND_ID.name() + "_result_" + findLostUserIdRequestDTO.getPhoneNumber()).equals("true")) {
+            throw new CertificationCodeMismatchException();
+        }
+
+        /* 사용자 조회 */
+        UserDTO userDTO = userRepository.findByUserId(findLostUserIdRequestDTO.getUserId())
+                .orElseThrow(UserNotFoundException::new)
+                .toDTO();
+
+        /* ID 일부 가리기 */
+        userIdInfo.put("userId", userDTO.getUserId().substring(0, 5) + "***");
+
+        return CommonResponseDTO.builder()
+                .code(HttpStatus.OK.value())
+                .isSuccess(true)
+                .data(userIdInfo)
                 .build();
     }
 }

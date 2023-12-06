@@ -1,0 +1,10 @@
+====== 요청 형식
+include::{snippets}/find-user-id-test/http-request.adoc[]
+====== Request Body
+include::{snippets}/find-user-id-test/request-parameters.adoc[]
+====== 응답 형식
+include::{snippets}/find-user-id-test/http-response.adoc[]
+====== Response Body
+include::{snippets}/find-user-id-test/response-body.adoc[]
+====== Try with curl
+include::{snippets}/find-user-id-test/curl-request.adoc[]
