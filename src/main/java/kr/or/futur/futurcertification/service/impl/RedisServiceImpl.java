@@ -14,7 +14,7 @@ import java.time.Duration;
 @Service
 public class RedisServiceImpl implements RedisService {
 
-    private final RedisTemplate<String, String> redisTemplate;
+    private final RedisTemplate<String, Object> redisTemplate;
     private final Logger log = LoggerFactory.getLogger(RedisService.class);
 
     @Override
@@ -30,9 +30,14 @@ public class RedisServiceImpl implements RedisService {
 
     @Override
     public void setDataExpire(String key, String value, long duration) {
-        ValueOperations<String, String> valueOperations = redisTemplate.opsForValue();
+        ValueOperations<String, Object> valueOperations = redisTemplate.opsForValue();
         Duration expireDuration = Duration.ofSeconds(duration);
         valueOperations.set(key, value, expireDuration);
+    }
+
+    @Override
+    public void setDataExpire(String key, Object value, long duration) {
+        ValueOperations<String, Object> valueOperations = redisTemplate.opsForValue();
     }
 
     @Override
@@ -41,13 +46,19 @@ public class RedisServiceImpl implements RedisService {
     }
 
     @Override
-    public String getData(String key) {
-        ValueOperations<String, String> valueOperations = redisTemplate.opsForValue();
+    public Object getData(String key) {
+        ValueOperations<String, Object> valueOperations = redisTemplate.opsForValue();
         return valueOperations.get(key);
     }
 
     @Override
     public boolean existData(String key) {
         return Boolean.TRUE.equals(redisTemplate.hasKey(key));
+    }
+
+    @Override
+    public String checkExpirationCertificationNumber() {
+        /* TODO 구현 예정 */
+        return null;
     }
 }

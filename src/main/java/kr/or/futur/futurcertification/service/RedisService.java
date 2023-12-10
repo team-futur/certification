@@ -16,6 +16,14 @@ public interface RedisService {
     void setDataExpire(String key, String value, long duration);
 
     /**
+     * 특정 데이터를 저
+     * @param key 키
+     * @param value 값
+     * @param duration 만료 시간
+     */
+    void setDataExpire(String key, Object value, long duration);
+
+    /**
      * 특정 키 값 삭제
      * @param key 키
      */
@@ -26,7 +34,7 @@ public interface RedisService {
      * @param key 키
      * @return 값
      */
-    String getData(String key);
+    Object getData(String key);
 
     /**
      * 특정 키에 해당하는 값의 존재 유무
@@ -34,4 +42,10 @@ public interface RedisService {
      * @return 값의 존재 유무
      */
     boolean existData(String key);
+
+    /**
+     * 인증번호 만료 시간 확인
+     * @return mm:ss
+     */
+    String checkExpirationCertificationNumber();
 }

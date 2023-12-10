@@ -34,7 +34,7 @@ class RedisServiceImplTest {
     void setDataExpire() throws InterruptedException {
         redisService.setDataExpire("TEST", "1234", 10);
 
-        String redisData = redisService.getData("TEST");
+        String redisData = (String) redisService.getData("TEST");
 
         // 데이터 검증
         assertNotNull(redisData, "Redis에서 데이터를 검색하지 못했습니다.");
@@ -42,7 +42,7 @@ class RedisServiceImplTest {
 
         // 만료 시간 후 데이터 검증
         Thread.sleep(10000); // 10초 대기
-        redisData = redisService.getData("TEST");
+        redisData = (String) redisService.getData("TEST");
         assertNull(redisData, "데이터가 만료 시간 후에도 여전히 존재합니다.");
     }
 
@@ -54,7 +54,7 @@ class RedisServiceImplTest {
         redisService.deleteData("TEST");
 
         // 데이터 검증
-        String redisData = redisService.getData("TEST");
+        String redisData = (String) redisService.getData("TEST");
         assertNull(redisData, "Redis에서 데이터를 삭제하지 못했습니다.");
     }
 
@@ -62,7 +62,7 @@ class RedisServiceImplTest {
     @DisplayName("특정 데이터 조회 - getData")
     void getData() {
         redisService.setDataExpire("TEST", "1234", 10);
-        String redisData = redisService.getData("TEST");
+        String redisData = (String) redisService.getData("TEST");
 
         assertNotNull(redisData, "Redis에서 데이터를 검색하지 못했습니다.");
     }

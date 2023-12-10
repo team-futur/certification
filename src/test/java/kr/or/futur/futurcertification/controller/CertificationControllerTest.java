@@ -133,7 +133,7 @@ class CertificationControllerTest {
         requestCertificationCode(certificationCodeInputs);
 
         /* Redis에서 정보 가져오기 */
-        String certificationNumber = redisService.getData(CertificationCodeType.REGISTER.name() + "_" + phoneNumber);
+        String certificationNumber = (String) redisService.getData(CertificationCodeType.REGISTER.name() + "_" + phoneNumber);
         certificationCodeInputs.put("certificationNumber", certificationNumber);
 
         /* 인증번호 확인 */
@@ -237,7 +237,7 @@ class CertificationControllerTest {
         requestCertificationCode(inputs);
 
         /* Redis에서 정보 가져오기 */
-        String certificationNumber = redisService.getData(CertificationCodeType.REGISTER.name() + "_" + phoneNumber);
+        String certificationNumber = (String) redisService.getData(CertificationCodeType.REGISTER.name() + "_" + phoneNumber);
         inputs.put("certificationNumber", certificationNumber);
 
         /* 인증번호 확인 */
@@ -279,7 +279,7 @@ class CertificationControllerTest {
         requestCertificationCode(inputs);
 
         /* Redis에서 정보 가져오기 */
-        String certificationNumber = redisService.getData(CertificationCodeType.DELETE.name() + "_" + phoneNumber);
+        String certificationNumber = (String) redisService.getData(CertificationCodeType.DELETE.name() + "_" + phoneNumber);
         inputs.put("certificationNumber", certificationNumber);
 
         /* 인증번호 확인 */
@@ -317,7 +317,7 @@ class CertificationControllerTest {
         requestCertificationCode(inputs);
 
         /* Redis에서 정보 가져오기 */
-        String certificationNumber = redisService.getData(CertificationCodeType.RESTORE.name() + "_" + phoneNumber);
+        String certificationNumber = (String) redisService.getData((CertificationCodeType.RESTORE.name() + "_" + phoneNumber));
         inputs.put("certificationNumber", certificationNumber);
 
         /* 인증번호 확인 */
@@ -388,7 +388,7 @@ class CertificationControllerTest {
         /* 인증번호 요청 */
         requestCertificationCode(inputs);
 
-        String certificationNumber = redisService.getData(CertificationCodeType.FIND_ID.name() + "_" + phoneNumber);
+        String certificationNumber = (String) redisService.getData(CertificationCodeType.FIND_ID.name() + "_" + phoneNumber);
         inputs.put("certificationNumber", certificationNumber);
 
         /* 인증번호 확인 */

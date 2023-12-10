@@ -102,6 +102,13 @@ public class CertificationController {
                 .build();
     }
 
+    @GetMapping("/check-expiration-certification-number")
+    public CommonResponseDTO checkExpirationCertificationNumber() {
+
+        /* 인증 번호 확인 시간 */
+        return null;
+    }
+
     /**
      * 로그아웃
      */

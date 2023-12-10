@@ -66,6 +66,12 @@ dependencies {
     /* lombok */
     annotationProcessor 'org.projectlombok:lombok'
     compileOnly 'org.projectlombok:lombok'
+
+    /* H2*/ testImplementation 'com.h2database:h2:2.2.224'
+    /* MariaDB-Client */
+    implementation 'org.mariadb.jdbc:mariadb-java-client:3.3.1'
+
+
 }
 
 dependencyManagement {

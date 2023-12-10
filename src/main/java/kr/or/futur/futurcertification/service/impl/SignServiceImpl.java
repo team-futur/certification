@@ -175,6 +175,7 @@ public class SignServiceImpl implements SignService {
         /* 0. redis에 저장할 key 값, 인증번호 생성*/
         String redisKey = sendCertificationRequestDTO.getType() + "_" + sendCertificationRequestDTO.getPhoneNumber();
         String redisCntKey = sendCertificationRequestDTO.getType() + "_cnt_" + sendCertificationRequestDTO.getPhoneNumber();
+        String expirationRedisKey = sendCertificationRequestDTO.getType() + "_expiration_" + sendCertificationRequestDTO.getPhoneNumber();
         String certificationNumber = String.valueOf((int) (Math.random() * 90000) + 10000);
 
        try {
@@ -185,8 +186,12 @@ public class SignServiceImpl implements SignService {
 
            /* TODO 요청 횟수 제한 */
 
+           long nowMilliseconds = System.currentTimeMillis();
+           long threeMinutesLater = nowMilliseconds + (3 * 60 * 1000);
+
            /* 2. redis에 저장 및 인증번호 발송 */
            redisService.setDataExpire(redisKey, certificationNumber, 180);
+           redisService.setDataExpire(expirationRedisKey, threeMinutesLater, 180);
            smsService.sendCertificationSMS(sendCertificationRequestDTO.getPhoneNumber(), certificationNumber);
        } catch (Exception e) {
            throw new CertificationCodeSendingFailedException(e);
@@ -204,7 +209,7 @@ public class SignServiceImpl implements SignService {
         }
 
         /* 2. 레디스에서 인증번호 추출 */
-        String certificationNumber = redisService.getData(redisKey);
+        String certificationNumber = (String) redisService.getData(redisKey);
 
         /* 3. 인증번호 불일치하는 경우 제외 */
         if(!certificationRequestDTO.getCertificationNumber().equals(certificationNumber)) {

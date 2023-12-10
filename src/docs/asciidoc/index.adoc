@@ -29,7 +29,7 @@ include::src/docs/asciidoc/restoreUserId.adoc[]
 == 사용자 삭제
 include::src/docs/asciidoc/deleteUserId.adoc[]
 
-== 아이디 또는 비밀번호 찾기
+== 아이디 또는 비밀번호로 사용자 정보 조회
 include::src/docs/asciidoc/findUserIdAndPhoneNumber.adoc[]
 
 == 아이디 찾기
