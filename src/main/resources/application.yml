@@ -34,11 +34,11 @@ eureka:
     register-with-eureka: true
     fetch-registry: true
     service-url:
-      defaultZone: http://210.114.22.192:8761/eureka
+      defaultZone: http:///eureka
   instance:
     preferIpAddress: true
     instance-id: ${spring.application.name}:${spring.application.instance_id:${random.value}}
-    ip-address: 210.114.22.192
+    ip-address: 
     nonSecurePort: ${server.port}
 
 springboot:
