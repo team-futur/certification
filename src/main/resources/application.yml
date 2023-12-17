@@ -9,15 +9,15 @@ spring:
     name: certification-service
   datasource:
     driver-class-name: org.mariadb.jdbc.Driver
-    url: jdbc:mariadb://210.114.22.192:5506/pesticide
-    username: root
-    password: k76639950
+    url: jdbc:mariadb:///pesticide
+    username: 
+    password: 
   # Redis Info
   data:
     redis:
-      host: 210.114.22.192
-      port: 6379
-      password: a1234567890
+      host: 
+      port: 
+      password: 
   # JPA Info
   jpa:
     hibernate:
